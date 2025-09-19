@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Task, Subtask, Comment } from '../types';
@@ -9,7 +10,7 @@ interface TaskModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (taskData: Omit<Task, 'id'>) => void;
-  onDelete?: () => void;
+  onDelete?: (taskId: string) => void;
   taskToEdit?: Task | null;
 }
 
@@ -130,8 +131,8 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, onDelete
   };
   
   const handleDelete = () => {
-      if (onDelete && window.confirm("Are you sure you want to delete this task? This cannot be undone.")) {
-          onDelete();
+      if (onDelete && taskToEdit) {
+          onDelete(taskToEdit.id);
       }
   }
   

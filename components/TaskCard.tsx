@@ -11,6 +11,7 @@ interface TaskCardProps {
   task: Task;
   onUpdateTask: (updatedTask: Task) => void;
   onEdit: () => void;
+  isDragOverlay?: boolean;
 }
 
 const Checkbox: React.FC<{ checked: boolean; onChange: () => void }> = ({ checked, onChange }) => (
@@ -47,7 +48,7 @@ const SubtaskItem: React.FC<{subtask: Subtask, onToggle: () => void}> = ({subtas
     );
 };
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateTask, onEdit }) => {
+const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateTask, onEdit, isDragOverlay = false }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [currentTitle, setCurrentTitle] = useState(task.title);
@@ -64,7 +65,8 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateTask, onEdit }) => {
       data: {
           type: 'Task',
           task,
-      }
+      },
+      disabled: isDragOverlay,
   });
 
   const dndTransform = CSS.Transform.toString(transform);
@@ -75,13 +77,19 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateTask, onEdit }) => {
     transform: dndTransform,
     zIndex: isDragging ? 10 : 'auto',
   };
-
+  
   if (isDragging) {
-    style.boxShadow = (styles.taskCardDragging as React.CSSProperties).boxShadow;
-    const customTransform = (styles.taskCardDragging as React.CSSProperties).transform;
-    style.transform = `${dndTransform || ''} ${customTransform || ''}`;
-    style.opacity = 0.5;
+    // The original item in the list is being dragged. Hide it.
+    style.opacity = 0;
   }
+
+  if (isDragOverlay) {
+    // This is the item rendered in the DragOverlay.
+    style.cursor = 'grabbing';
+    style.boxShadow = (styles.taskCardDragging as React.CSSProperties).boxShadow;
+    style.transform = `${(styles.taskCardDragging as React.CSSProperties).transform}`;
+  }
+
 
   const handleTitleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -130,8 +138,8 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateTask, onEdit }) => {
       style={style}
       {...attributes}
       {...listeners}
-      layoutId={task.id}
-      whileHover={{ backgroundColor: 'var(--bg-surface-hover)', borderColor: 'var(--border-default)' }}
+      layoutId={isDragOverlay ? undefined : task.id}
+      whileHover={isDragOverlay ? {} : { backgroundColor: 'var(--bg-surface-hover)', borderColor: 'var(--border-default)' }}
       transition={{ duration: 0.2 }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}

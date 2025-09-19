@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
     DndContext,
@@ -48,6 +49,43 @@ const initialData: BoardState = {
   columnOrder: ['col-1', 'col-2', 'col-3'],
 };
 
+// Custom hook to handle proximity glow effect
+const useProximityGlow = (ref: React.RefObject<HTMLButtonElement>, glowColor: string) => {
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = element.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      const distance = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
+      const maxDistance = Math.sqrt(Math.pow(centerX, 2) + Math.pow(centerY, 2)) + 50; 
+      const opacity = Math.max(0, 1 - distance / maxDistance);
+
+      element.style.setProperty('--glow-x', `${x}px`);
+      element.style.setProperty('--glow-y', `${y}px`);
+      element.style.setProperty('--glow-color', glowColor);
+      element.style.setProperty('--glow-opacity', `${opacity * 0.6}`);
+    };
+
+    const handleMouseLeave = () => {
+      element.style.setProperty('--glow-opacity', '0');
+    };
+
+    element.addEventListener('mousemove', handleMouseMove);
+    element.addEventListener('mouseleave', handleMouseLeave);
+
+    return () => {
+      element.removeEventListener('mousemove', handleMouseMove);
+      element.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, [ref, glowColor]);
+};
+
 const App: React.FC = () => {
     const [board, setBoard] = useState<BoardState>(() => {
     try {
@@ -68,6 +106,13 @@ const App: React.FC = () => {
   
   const [activeItem, setActiveItem] = useState<Task | Column | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const saveButtonRef = useRef<HTMLButtonElement>(null);
+  const loadButtonRef = useRef<HTMLButtonElement>(null);
+  const resetButtonRef = useRef<HTMLButtonElement>(null);
+
+  useProximityGlow(saveButtonRef, 'var(--accent-blue)');
+  useProximityGlow(loadButtonRef, 'var(--priority-medium)');
+  useProximityGlow(resetButtonRef, 'var(--danger)');
 
 
   useEffect(() => {
@@ -142,70 +187,60 @@ const App: React.FC = () => {
     
     if (!activeColumnId || !overColumnId) return;
     
-    const activeColumn = board.columns[activeColumnId];
-    const overColumn = board.columns[overColumnId];
-    
-    if (activeColumnId === overColumnId) {
-        const oldIndex = activeColumn.tasks.findIndex(t => t.id === activeId);
-        const newIndex = overColumn.tasks.findIndex(t => t.id === overId);
+    setBoard(board => {
+        const activeColumn = board.columns[activeColumnId];
+        const overColumn = board.columns[overColumnId];
         
-        if (oldIndex !== -1 && newIndex !== -1) {
-            const newTasks = arrayMove(activeColumn.tasks, oldIndex, newIndex);
+        if (activeColumnId === overColumnId) {
+            const oldIndex = activeColumn.tasks.findIndex(t => t.id === activeId);
+            const newIndex = overColumn.tasks.findIndex(t => t.id === overId);
+            
+            if (oldIndex !== -1 && newIndex !== -1) {
+                const newTasks = arrayMove(activeColumn.tasks, oldIndex, newIndex);
+                const newColumns = {
+                    ...board.columns,
+                    [activeColumnId]: { ...activeColumn, tasks: newTasks }
+                };
+                return { ...board, columns: newColumns };
+            }
+        } else {
+            const sourceTasks = [...activeColumn.tasks];
+            const destTasks = [...overColumn.tasks];
+            
+            const sourceIndex = sourceTasks.findIndex(t => t.id === activeId);
+            const [movedTask] = sourceTasks.splice(sourceIndex, 1);
+            
+            let destIndex = destTasks.findIndex(t => t.id === overId);
+            if (destIndex === -1) {
+                destIndex = destTasks.length;
+            }
+            destTasks.splice(destIndex, 0, movedTask);
+            
             const newColumns = {
                 ...board.columns,
-                [activeColumnId]: { ...activeColumn, tasks: newTasks }
+                [activeColumnId]: { ...activeColumn, tasks: sourceTasks },
+                [overColumnId]: { ...overColumn, tasks: destTasks }
             };
-            setBoard({ ...board, columns: newColumns });
+            return { ...board, columns: newColumns };
         }
-    } else {
-        const sourceTasks = [...activeColumn.tasks];
-        const destTasks = [...overColumn.tasks];
-        
-        const sourceIndex = sourceTasks.findIndex(t => t.id === activeId);
-        const [movedTask] = sourceTasks.splice(sourceIndex, 1);
-        
-        let destIndex = destTasks.findIndex(t => t.id === overId);
-        if (destIndex === -1) {
-            destIndex = destTasks.length;
-        }
-        destTasks.splice(destIndex, 0, movedTask);
-        
-        const newColumns = {
-            ...board.columns,
-            [activeColumnId]: { ...activeColumn, tasks: sourceTasks },
-            [overColumnId]: { ...overColumn, tasks: destTasks }
-        };
-        setBoard({ ...board, columns: newColumns });
-    }
+        return board;
+    });
   };
   
-  const handleOpenAddModal = (columnId: string) => {
+  const handleOpenAddModal = useCallback((columnId: string) => {
     setModalState({ isOpen: true, mode: 'add', columnId });
-  };
+  }, []);
   
-  const handleOpenEditModal = (task: Task) => {
+  const handleOpenEditModal = useCallback((task: Task) => {
       const columnId = Object.values(board.columns).find(col => col.tasks.some(t => t.id === task.id))?.id;
       if (columnId) {
         setModalState({ isOpen: true, mode: 'edit', task, columnId });
       }
-  };
+  }, [board.columns]);
 
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
       setModalState({ isOpen: false, mode: 'add' });
-  };
-
-  const handleSaveTask = (taskData: Omit<Task, 'id'>) => {
-    if (modalState.mode === 'add' && modalState.columnId) {
-        const newTask: Task = { ...taskData, id: `task-${Date.now()}`};
-        const column = board.columns[modalState.columnId];
-        const updatedTasks = [...column.tasks, newTask];
-        const updatedColumn: Column = { ...column, tasks: updatedTasks };
-        setBoard(prev => ({...prev, columns: {...prev.columns, [modalState.columnId as string]: updatedColumn }}));
-    } else if (modalState.mode === 'edit' && modalState.task) {
-        const updatedTask = { ...modalState.task, ...taskData };
-        handleUpdateTask(updatedTask);
-    }
-  };
+  }, []);
 
   const handleUpdateTask = useCallback((updatedTask: Task) => {
       setBoard(prev => {
@@ -224,22 +259,42 @@ const App: React.FC = () => {
       });
   }, []);
 
-  const handleDeleteTask = useCallback(() => {
-    if (modalState.mode === 'edit' && modalState.task && modalState.columnId) {
-        const { task, columnId } = modalState;
+  const handleSaveTask = useCallback((taskData: Omit<Task, 'id'>) => {
+    if (modalState.mode === 'add' && modalState.columnId) {
+        const newTask: Task = { ...taskData, id: `task-${Date.now()}`};
         setBoard(prev => {
-            const newColumns = { ...prev.columns };
-            const column = newColumns[columnId];
-            if (!column) return prev;
-            const newTasks = column.tasks.filter(t => t.id !== task.id);
-            newColumns[columnId] = {...column, tasks: newTasks};
-            return { ...prev, columns: newColumns };
+            const column = prev.columns[modalState.columnId as string];
+            const updatedTasks = [...column.tasks, newTask];
+            const updatedColumn: Column = { ...column, tasks: updatedTasks };
+            return {...prev, columns: {...prev.columns, [modalState.columnId as string]: updatedColumn }};
         });
-        handleCloseModal();
+    } else if (modalState.mode === 'edit' && modalState.task) {
+        const updatedTask = { ...modalState.task, ...taskData };
+        handleUpdateTask(updatedTask);
     }
-  }, [modalState]);
+  }, [modalState, handleUpdateTask]);
 
-  const handleAddColumn = () => {
+  const handleDeleteTask = (taskId: string) => {
+    if (!window.confirm("Are you sure you want to delete this task? This cannot be undone.")) {
+        return;
+    }
+    setBoard(currentBoard => {
+      const newColumns = { ...currentBoard.columns };
+      const columnId = Object.keys(newColumns).find(colId =>
+        newColumns[colId].tasks.some(task => task.id === taskId)
+      );
+      if (columnId) {
+        newColumns[columnId] = {
+          ...newColumns[columnId],
+          tasks: newColumns[columnId].tasks.filter(task => task.id !== taskId),
+        };
+      }
+      return { ...currentBoard, columns: newColumns };
+    });
+    handleCloseModal();
+  };
+
+  const handleAddColumn = useCallback(() => {
       const newColumnId = `col-${Date.now()}`;
       const newColumn: Column = {
           id: newColumnId,
@@ -250,30 +305,31 @@ const App: React.FC = () => {
           columnOrder: [...prev.columnOrder, newColumnId],
           columns: { ...prev.columns, [newColumnId]: newColumn },
       }));
-  };
+  }, []);
   
-  const handleRenameColumn = (columnId: string, newTitle: string) => {
-    setBoard(prev => {
-        const newColumns = {
+  const handleRenameColumn = useCallback((columnId: string, newTitle: string) => {
+    setBoard(prev => ({
+        ...prev,
+        columns: {
             ...prev.columns,
             [columnId]: { ...prev.columns[columnId], title: newTitle },
-        };
-        return { ...prev, columns: newColumns };
-    });
-  };
+        },
+    }));
+  }, []);
 
   const handleDeleteColumn = (columnId: string) => {
-      if (window.confirm("Are you sure you want to delete this column and all its tasks? This is irreversible.")) {
-          setBoard(prev => {
-              const newColumns = { ...prev.columns };
-              delete newColumns[columnId];
-              const newColumnOrder = prev.columnOrder.filter(id => id !== columnId);
-              return {
-                  columnOrder: newColumnOrder,
-                  columns: newColumns,
-              };
-          });
-      }
+    if (!window.confirm("Are you sure you want to delete this column and all its tasks? This is irreversible.")) {
+        return;
+    }
+    setBoard(currentBoard => {
+        const newColumnOrder = currentBoard.columnOrder.filter(id => id !== columnId);
+        const { [columnId]: _deletedColumn, ...restColumns } = currentBoard.columns;
+        return {
+            ...currentBoard,
+            columnOrder: newColumnOrder,
+            columns: restColumns,
+        };
+    });
   };
 
   const resetBoard = () => {
@@ -282,7 +338,7 @@ const App: React.FC = () => {
     }
   };
   
-  const handleSaveToFile = () => {
+  const handleSaveToFile = useCallback(() => {
       const boardJson = JSON.stringify(board, null, 2);
       const blob = new Blob([boardJson], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -291,9 +347,9 @@ const App: React.FC = () => {
       a.download = 'mini-loop-board.json';
       a.click();
       URL.revokeObjectURL(url);
-  };
+  }, [board]);
   
-  const handleLoadFromFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLoadFromFile = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
       if (!file) return;
 
@@ -321,7 +377,7 @@ const App: React.FC = () => {
       };
       reader.readAsText(file);
       if(event.target) event.target.value = '';
-  };
+  }, []);
 
   const headerButtonStyle = {
     ...styles.iconButton,
@@ -355,14 +411,14 @@ const App: React.FC = () => {
                 Mini Loop
             </h1>
             <div style={styles.headerActions}>
-                <button title="Save Board" onClick={handleSaveToFile} style={saveButtonStyle}>
+                <button ref={saveButtonRef} title="Save Board" onClick={handleSaveToFile} style={saveButtonStyle} className="proximity-glow-button">
                     <Icon name="floppy-disk" size={18} />
                 </button>
                  <input type="file" accept=".json" ref={fileInputRef} onChange={handleLoadFromFile} style={{ display: 'none' }} />
-                <button title="Load Board" onClick={() => fileInputRef.current?.click()} style={loadButtonStyle}>
+                <button ref={loadButtonRef} title="Load Board" onClick={() => fileInputRef.current?.click()} style={loadButtonStyle} className="proximity-glow-button">
                     <Icon name="folder-open" size={18} />
                 </button>
-                <button title="Reset Board" onClick={resetBoard} style={resetButtonStyle}>
+                <button ref={resetButtonRef} title="Reset Board" onClick={resetBoard} style={resetButtonStyle} className="proximity-glow-button">
                     <Icon name="arrow-clockwise" size={18} />
                 </button>
             </div>
@@ -407,12 +463,14 @@ const App: React.FC = () => {
                             onUpdateTask={() => {}}
                             onDeleteColumn={() => {}}
                             onRenameColumn={() => {}}
+                            isDragOverlay
                         />
                     ) : (
                         <TaskCard
                             task={activeItem as Task}
                             onUpdateTask={() => {}}
                             onEdit={() => {}}
+                            isDragOverlay
                         />
                     )
                 ) : null}

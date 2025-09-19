@@ -25,7 +25,6 @@ export const styles: { [key: string]: React.CSSProperties | { [key: string]: Rea
     ...mixins.flexBetween,
     padding: '8px 24px',
     backgroundColor: 'var(--bg-base)',
-    borderBottom: `1px solid var(--border-default)`,
     flexShrink: 0,
     position: 'relative',
     zIndex: 10,
@@ -69,9 +68,11 @@ export const styles: { [key: string]: React.CSSProperties | { [key: string]: Rea
     borderRadius: 'var(--border-radius-lg)',
     maxHeight: 'calc(100vh - 120px)',
     transition: 'opacity 0.2s, box-shadow 0.2s',
+    boxShadow: 'var(--shadow-sm)',
+    border: '1px solid var(--border-subtle)',
   },
   columnDragging: {
-      boxShadow: `var(--shadow-lg)`,
+      boxShadow: `var(--shadow-lg), var(--shadow-glow)`,
   },
   columnHeader: {
     ...mixins.flexBetween,
@@ -116,9 +117,10 @@ export const styles: { [key: string]: React.CSSProperties | { [key: string]: Rea
     alignItems: 'flex-start',
     cursor: 'grab',
     padding: '12px',
+    boxShadow: 'var(--shadow-sm)',
   },
   taskCardDragging: {
-    boxShadow: `var(--shadow-lg)`,
+    boxShadow: `var(--shadow-lg), var(--shadow-glow)`,
     transform: 'rotate(2deg) scale(1.03)',
   },
   taskCardContent: {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -15,9 +15,10 @@ interface ColumnProps {
   onEditTask: (task: Task) => void;
   onDeleteColumn: (columnId: string) => void;
   onRenameColumn: (newTitle: string) => void;
+  isDragOverlay?: boolean;
 }
 
-const Column: React.FC<ColumnProps> = ({ column, onUpdateTask, onAddTask, onEditTask, onDeleteColumn, onRenameColumn }) => {
+const Column: React.FC<ColumnProps> = ({ column, onUpdateTask, onAddTask, onEditTask, onDeleteColumn, onRenameColumn, isDragOverlay = false }) => {
   const { setNodeRef: setDroppableNodeRef, isOver } = useDroppable({ id: column.id });
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [currentTitle, setCurrentTitle] = useState(column.title);
@@ -35,6 +36,7 @@ const Column: React.FC<ColumnProps> = ({ column, onUpdateTask, onAddTask, onEdit
       type: 'Column',
       column: column,
     },
+    disabled: isDragOverlay,
   });
 
   const style: React.CSSProperties = {
@@ -44,8 +46,14 @@ const Column: React.FC<ColumnProps> = ({ column, onUpdateTask, onAddTask, onEdit
   };
 
   if (isDragging) {
-    style.opacity = 0.5;
+    // Original item being dragged. Make it a semi-transparent placeholder.
+    style.opacity = 0.4;
+  }
+  
+  if (isDragOverlay) {
+     // Item in overlay.
     style.boxShadow = (styles.columnDragging as React.CSSProperties).boxShadow;
+    style.cursor = 'grabbing';
   }
   
   const handleTitleDoubleClick = (e: React.MouseEvent) => {
@@ -124,14 +132,12 @@ const Column: React.FC<ColumnProps> = ({ column, onUpdateTask, onAddTask, onEdit
       >
         <motion.div
             ref={setDroppableNodeRef}
-            layout
             style={{
                 ...styles.taskList, 
                 backgroundColor: isOver ? 'var(--bg-surface-overlay)' : 'transparent',
                 transition: 'background-color 0.2s'
             }}
         >
-            <AnimatePresence>
             {column.tasks.map((task) => (
                 <TaskCard 
                     key={task.id}
@@ -140,7 +146,6 @@ const Column: React.FC<ColumnProps> = ({ column, onUpdateTask, onAddTask, onEdit
                     onEdit={() => onEditTask(task)}
                 />
             ))}
-            </AnimatePresence>
         </motion.div>
       </SortableContext>
     </div>
