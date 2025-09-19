@@ -132,7 +132,6 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, onDelete
   const handleDelete = () => {
       if (onDelete && window.confirm("Are you sure you want to delete this task? This cannot be undone.")) {
           onDelete();
-          onClose();
       }
   }
   

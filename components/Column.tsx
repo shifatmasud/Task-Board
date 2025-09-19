@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
@@ -14,10 +14,13 @@ interface ColumnProps {
   onAddTask: () => void;
   onEditTask: (task: Task) => void;
   onDeleteColumn: (columnId: string) => void;
+  onRenameColumn: (newTitle: string) => void;
 }
 
-const Column: React.FC<ColumnProps> = ({ column, onUpdateTask, onAddTask, onEditTask, onDeleteColumn }) => {
+const Column: React.FC<ColumnProps> = ({ column, onUpdateTask, onAddTask, onEditTask, onDeleteColumn, onRenameColumn }) => {
   const { setNodeRef: setDroppableNodeRef, isOver } = useDroppable({ id: column.id });
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [currentTitle, setCurrentTitle] = useState(column.title);
 
   const {
     setNodeRef,
@@ -44,19 +47,72 @@ const Column: React.FC<ColumnProps> = ({ column, onUpdateTask, onAddTask, onEdit
     style.opacity = 0.5;
     style.boxShadow = (styles.columnDragging as React.CSSProperties).boxShadow;
   }
+  
+  const handleTitleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsEditingTitle(true);
+  };
+  
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCurrentTitle(e.target.value);
+  };
+
+  const handleTitleSave = () => {
+    if (currentTitle.trim() && currentTitle.trim() !== column.title) {
+        onRenameColumn(currentTitle.trim());
+    }
+    setIsEditingTitle(false);
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+        handleTitleSave();
+    } else if (e.key === 'Escape') {
+        setCurrentTitle(column.title);
+        setIsEditingTitle(false);
+    }
+    e.stopPropagation();
+  };
 
   return (
     <div ref={setNodeRef} style={style}>
       <div style={styles.columnHeader} {...attributes} {...listeners}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <h2 style={styles.columnTitle}>{column.title}</h2>
-          <span style={styles.taskCount}>{column.tasks.length}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexGrow: 1, minWidth: 0 }}>
+            {isEditingTitle ? (
+                <input
+                    style={{ ...styles.inlineEditInput, fontSize: '1rem', fontWeight: 600, width: '100%' }}
+                    value={currentTitle}
+                    onChange={handleTitleChange}
+                    onBlur={handleTitleSave}
+                    onKeyDown={handleTitleKeyDown}
+                    autoFocus
+                    onMouseDown={(e) => e.stopPropagation()}
+                />
+            ) : (
+                <h2 
+                    style={styles.columnTitle} 
+                    onDoubleClick={handleTitleDoubleClick}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
+                >{column.title}</h2>
+            )}
+            <span style={styles.taskCount}>{column.tasks.length}</span>
         </div>
         <div style={styles.columnHeaderActions}>
-            <button style={styles.iconButton} onClick={onAddTask}>
+            <button 
+                style={styles.iconButton} 
+                onClick={onAddTask}
+                onMouseDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
+            >
                 <Icon name="plus" size={20} />
             </button>
-            <button style={{...styles.iconButton, cursor: 'pointer'}} onClick={(e) => { e.stopPropagation(); onDeleteColumn(column.id); }}>
+            <button 
+                style={{...styles.iconButton, cursor: 'pointer'}} 
+                onClick={(e) => { e.stopPropagation(); onDeleteColumn(column.id); }}
+                onMouseDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
+            >
                 <Icon name="trash" size={20} />
             </button>
         </div>

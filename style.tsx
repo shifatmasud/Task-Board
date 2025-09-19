@@ -23,30 +23,39 @@ export const styles: { [key: string]: React.CSSProperties | { [key: string]: Rea
   },
   header: {
     ...mixins.flexBetween,
-    padding: '12px 24px',
-    backgroundColor: 'rgba(10, 10, 10, 0.7)',
-    borderBottom: `1px solid var(--border-subtle)`,
-    backdropFilter: 'blur(10px)',
+    padding: '8px 24px',
+    backgroundColor: 'var(--bg-base)',
+    borderBottom: `1px solid var(--border-default)`,
     flexShrink: 0,
     position: 'relative',
     zIndex: 10,
   },
   headerTitle: {
-    fontSize: '1.25rem',
+    fontSize: '1.1rem',
     fontWeight: 600,
     color: 'var(--text-primary)',
     display: 'flex',
     alignItems: 'center',
-    gap: '12px'
+    gap: '10px'
+  },
+  inlineEditInput: {
+    width: '100%',
+    padding: '2px 4px',
+    margin: '-3px -5px',
+    backgroundColor: 'var(--bg-surface)',
+    border: `1px solid var(--accent-primary)`,
+    borderRadius: 'var(--border-radius-sm)',
+    color: 'var(--text-primary)',
+    outline: 'none',
   },
   headerActions: {
     display: 'flex',
-    gap: '12px',
+    gap: '8px',
   },
   boardContainer: {
     display: 'flex',
     flexGrow: 1,
-    padding: '24px',
+    padding: '24px 32px',
     gap: '24px',
     overflowX: 'auto',
     alignItems: 'flex-start',
@@ -54,21 +63,19 @@ export const styles: { [key: string]: React.CSSProperties | { [key: string]: Rea
   column: {
     display: 'flex',
     flexDirection: 'column',
-    width: '340px',
-    minWidth: '340px',
+    width: '320px',
+    minWidth: '320px',
     backgroundColor: 'var(--bg-surface)',
     borderRadius: 'var(--border-radius-lg)',
-    border: '1px solid var(--border-subtle)',
     maxHeight: 'calc(100vh - 120px)',
     transition: 'opacity 0.2s, box-shadow 0.2s',
   },
   columnDragging: {
       boxShadow: `var(--shadow-lg)`,
-      transform: 'rotate(1deg)',
   },
   columnHeader: {
     ...mixins.flexBetween,
-    padding: '16px 20px 12px 20px',
+    padding: '12px 16px 12px 16px',
     cursor: 'grab',
   },
   columnHeaderActions: {
@@ -78,7 +85,7 @@ export const styles: { [key: string]: React.CSSProperties | { [key: string]: Rea
   },
   columnTitle: {
     fontSize: '1rem',
-    fontWeight: 600,
+    fontWeight: 500,
     color: 'var(--text-primary)',
   },
   taskCount: {
@@ -92,56 +99,48 @@ export const styles: { [key: string]: React.CSSProperties | { [key: string]: Rea
   taskList: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '10px',
+    gap: '8px',
     overflowY: 'auto',
     flexGrow: 1,
-    padding: '0 12px 12px 12px',
+    padding: '0 8px 8px 8px',
     minHeight: '100px',
   },
   taskCard: {
     backgroundColor: 'var(--bg-surface-raised)',
     borderRadius: 'var(--border-radius-md)',
-    border: `1px solid var(--border-default)`,
+    border: `1px solid var(--border-subtle)`,
     transition: 'background-color 0.2s, box-shadow 0.2s, transform 0.2s, border-color 0.2s, opacity 0.2s',
     display: 'flex',
     position: 'relative',
     gap: '8px',
     alignItems: 'flex-start',
     cursor: 'grab',
-    boxShadow: 'var(--shadow-sm)',
+    padding: '12px',
   },
   taskCardDragging: {
     boxShadow: `var(--shadow-lg)`,
     transform: 'rotate(2deg) scale(1.03)',
   },
-  dragHandle: {
-    padding: '16px 0 16px 16px',
-    color: 'var(--text-tertiary)',
-    transition: 'color 0.2s',
-  },
   taskCardContent: {
     flexGrow: 1,
-    padding: '16px 16px 16px 0',
+    padding: '0 4px',
   },
   taskTitle: {
     fontWeight: 500,
     color: 'var(--text-primary)',
     marginBottom: '8px',
-    fontSize: '1rem',
+    fontSize: '0.9rem',
     paddingRight: '24px', // Space for edit button
   },
   taskFooter: {
     ...mixins.flexBetween,
-    marginTop: '16px',
+    marginTop: '12px',
   },
-  priorityBadge: {
-    padding: '4px 10px',
-    borderRadius: 'var(--border-radius-md)',
-    fontSize: '0.75rem',
-    fontWeight: 500,
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px'
+  priorityIndicator: {
+    width: '4px',
+    borderRadius: '2px',
+    alignSelf: 'stretch',
+    flexShrink: 0,
   },
   taskMeta: {
     display: 'flex',
@@ -157,19 +156,21 @@ export const styles: { [key: string]: React.CSSProperties | { [key: string]: Rea
   },
   taskEditButton: {
     position: 'absolute',
-    top: '8px',
-    right: '8px',
+    top: '4px',
+    right: '4px',
     background: 'none',
     border: 'none',
     color: 'var(--text-secondary)',
     cursor: 'pointer',
-    padding: '4px',
+    width: '36px',
+    height: '36px',
+    padding: '0',
     borderRadius: 'var(--border-radius-sm)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     transition: 'background-color 0.2s, color 0.2s, opacity 0.2s',
-    opacity: 0,
+    opacity: 1,
   },
   checklist: {
     marginTop: '12px',
@@ -181,7 +182,7 @@ export const styles: { [key: string]: React.CSSProperties | { [key: string]: Rea
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
-    fontSize: '0.9rem',
+    fontSize: '0.85rem',
     padding: '4px',
     borderRadius: 'var(--border-radius-sm)',
     transition: 'background-color 0.2s',
@@ -214,6 +215,20 @@ export const styles: { [key: string]: React.CSSProperties | { [key: string]: Rea
   checkboxChecked: {
     backgroundColor: 'var(--accent-primary)',
     borderColor: 'var(--accent-primary)',
+  },
+  progressBarContainer: {
+    height: '6px',
+    width: '100%',
+    backgroundColor: 'var(--bg-base)',
+    borderRadius: '3px',
+    overflow: 'hidden',
+    marginTop: '12px',
+  },
+  progressBarFill: {
+      height: '100%',
+      backgroundColor: 'var(--accent-primary)',
+      borderRadius: '3px',
+      transition: 'width 0.3s ease-in-out',
   },
   // Modal styles
   modalBackdrop: {
@@ -277,23 +292,23 @@ export const styles: { [key: string]: React.CSSProperties | { [key: string]: Rea
   },
   input: {
     width: '100%',
-    padding: '12px',
-    backgroundColor: 'var(--bg-surface)',
+    padding: '10px 12px',
+    backgroundColor: 'var(--bg-base)',
     border: `1px solid var(--border-default)`,
     borderRadius: 'var(--border-radius-md)',
     color: 'var(--text-primary)',
-    fontSize: '1rem',
+    fontSize: '0.9rem',
     outline: 'none',
     transition: 'border-color 0.2s, box-shadow 0.2s',
   },
   textarea: {
     width: '100%',
-    padding: '12px',
-    backgroundColor: 'var(--bg-surface)',
+    padding: '10px 12px',
+    backgroundColor: 'var(--bg-base)',
     border: `1px solid var(--border-default)`,
     borderRadius: 'var(--border-radius-md)',
     color: 'var(--text-primary)',
-    fontSize: '1rem',
+    fontSize: '0.9rem',
     minHeight: '120px',
     resize: 'vertical',
     outline: 'none',
@@ -301,11 +316,11 @@ export const styles: { [key: string]: React.CSSProperties | { [key: string]: Rea
   },
   // Button styles
   button: {
-    padding: '10px 16px',
+    padding: '8px 16px',
     borderRadius: 'var(--border-radius-md)',
     border: 'none',
     cursor: 'pointer',
-    fontWeight: 600,
+    fontWeight: 500,
     fontSize: '0.9rem',
     transition: 'all 0.2s',
     display: 'inline-flex',
@@ -318,7 +333,7 @@ export const styles: { [key: string]: React.CSSProperties | { [key: string]: Rea
     color: 'var(--text-on-accent)',
   },
   buttonSecondary: {
-    backgroundColor: 'transparent',
+    backgroundColor: 'var(--bg-surface-raised)',
     color: 'var(--text-primary)',
     border: `1px solid var(--border-default)`,
   },
@@ -327,12 +342,14 @@ export const styles: { [key: string]: React.CSSProperties | { [key: string]: Rea
     color: 'var(--danger)',
   },
   iconButton: {
-    background: 'none',
+    background: 'transparent',
     border: 'none',
     color: 'var(--text-secondary)',
     cursor: 'pointer',
-    padding: '6px',
-    borderRadius: 'var(--border-radius-sm)',
+    width: '44px',
+    height: '44px',
+    padding: '0',
+    borderRadius: 'var(--border-radius-md)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -350,7 +367,7 @@ export const styles: { [key: string]: React.CSSProperties | { [key: string]: Rea
     gap: '12px',
     marginTop: '8px',
     padding: '12px',
-    backgroundColor: 'var(--bg-surface)',
+    backgroundColor: 'var(--bg-base)',
     borderRadius: 'var(--border-radius-md)',
   },
   comment: {
@@ -374,11 +391,11 @@ export const styles: { [key: string]: React.CSSProperties | { [key: string]: Rea
     alignItems: 'center',
     justifyContent: 'center',
     gap: '8px',
-    width: '340px',
-    minWidth: '340px',
+    width: '320px',
+    minWidth: '320px',
     padding: '16px',
     backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    border: `1px dashed var(--border-default)`,
+    border: `1px solid var(--border-default)`,
     borderRadius: 'var(--border-radius-lg)',
     color: 'var(--text-secondary)',
     cursor: 'pointer',
@@ -387,19 +404,15 @@ export const styles: { [key: string]: React.CSSProperties | { [key: string]: Rea
   },
 };
 
-export const getPriorityStyle = (priority: Priority): React.CSSProperties => {
-  const baseStyle = {
-    backgroundColor: 'var(--bg-surface-overlay)',
-    border: '1px solid var(--border-default)',
-  };
+export const getPriorityIndicatorStyle = (priority: Priority): React.CSSProperties => {
   switch (priority) {
     case Priority.High:
-      return { ...baseStyle, color: 'var(--priority-high-text)' };
+      return { backgroundColor: 'var(--priority-high)' };
     case Priority.Medium:
-      return { ...baseStyle, color: 'var(--priority-medium-text)' };
+      return { backgroundColor: 'var(--priority-medium)' };
     case Priority.Low:
-      return { ...baseStyle, color: 'var(--priority-low-text)' };
+      return { backgroundColor: 'var(--priority-low)' };
     default:
-      return { ...baseStyle, color: 'var(--priority-none-text)' };
+      return { backgroundColor: 'var(--priority-none)' };
   }
 };

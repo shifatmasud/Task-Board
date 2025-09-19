@@ -3,45 +3,46 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Noir Kanban Board</title>
+    <title>Mini Loop</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
       :root {
-        --bg-base: #0A0A0A;
-        --bg-surface: #141414;
-        --bg-surface-raised: #1F1F1F;
-        --bg-surface-overlay: #2A2A2A;
-        --bg-surface-hover: #2A2A2A;
+        --bg-base: #121212;
+        --bg-surface: #1E1E1E;
+        --bg-surface-raised: #252525;
+        --bg-surface-overlay: #2C2C2C;
+        --bg-surface-hover: #333333;
         
-        --text-primary: #EAEAEA;
-        --text-secondary: #888888;
-        --text-tertiary: #555555;
+        --text-primary: #E0E0E0;
+        --text-secondary: #9E9E9E;
+        --text-tertiary: #616161;
         
-        --border-default: #2A2A2A;
-        --border-subtle: #1A1A1A;
+        --border-default: #393939;
+        --border-subtle: #252525;
         
-        --accent-primary: #EAEAEA;
-        --accent-primary-hover: #ffffff;
-        --text-on-accent: #0A0A0A;
+        --accent-primary: #B0B0B0;
+        --accent-primary-hover: #FFFFFF;
+        --text-on-accent: #121212;
+        --accent-blue: #64b5f6;
 
         --danger: #e57373;
         --danger-hover: #ef5350;
 
-        --priority-high-text: #EAEAEA;
-        --priority-medium-text: #b1b1b1;
-        --priority-low-text: #888888;
-        --priority-none-text: #555555;
+        --priority-high: #e57373;
+        --priority-medium: #f2c94c;
+        --priority-low: #81c784;
+        --priority-none: #616161;
 
-        --shadow-sm: 0 1px 2px rgba(0,0,0,0.6);
-        --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.6), 0 2px 4px -1px rgba(0,0,0,0.4);
-        --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.8), 0 4px 6px -2px rgba(0,0,0,0.6);
+        --shadow-sm: 0 1px 2px rgba(0,0,0,0.5);
+        --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.5), 0 2px 4px -1px rgba(0,0,0,0.4);
+        --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.7), 0 4px 6px -2px rgba(0,0,0,0.6);
 
-        --border-radius-sm: 3px;
-        --border-radius-md: 4px;
-        --border-radius-lg: 6px;
+        --border-radius-sm: 4px;
+        --border-radius-md: 6px;
+        --border-radius-lg: 8px;
       }
       body {
         margin: 0;
@@ -71,6 +72,12 @@
       }
       ::-webkit-scrollbar-thumb:hover {
         background: #444;
+      }
+      
+      /* Minimal Input Focus */
+      input:focus, textarea:focus, select:focus {
+        border-color: var(--accent-primary) !important;
+        box-shadow: 0 0 0 2px rgba(176, 176, 176, 0.2);
       }
     </style>
   <script type="importmap">

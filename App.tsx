@@ -79,7 +79,11 @@ const App: React.FC = () => {
   }, [board]);
   
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 10, // User must drag for 10px before a drag is initiated
+      },
+    }),
     useSensor(KeyboardSensor, {
         coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -221,17 +225,19 @@ const App: React.FC = () => {
   }, []);
 
   const handleDeleteTask = useCallback(() => {
-    if (modalState.task && modalState.columnId) {
+    if (modalState.mode === 'edit' && modalState.task && modalState.columnId) {
         const { task, columnId } = modalState;
         setBoard(prev => {
             const newColumns = { ...prev.columns };
             const column = newColumns[columnId];
+            if (!column) return prev;
             const newTasks = column.tasks.filter(t => t.id !== task.id);
             newColumns[columnId] = {...column, tasks: newTasks};
             return { ...prev, columns: newColumns };
         });
+        handleCloseModal();
     }
-  }, [modalState.task, modalState.columnId]);
+  }, [modalState]);
 
   const handleAddColumn = () => {
       const newColumnId = `col-${Date.now()}`;
@@ -246,6 +252,16 @@ const App: React.FC = () => {
       }));
   };
   
+  const handleRenameColumn = (columnId: string, newTitle: string) => {
+    setBoard(prev => {
+        const newColumns = {
+            ...prev.columns,
+            [columnId]: { ...prev.columns[columnId], title: newTitle },
+        };
+        return { ...prev, columns: newColumns };
+    });
+  };
+
   const handleDeleteColumn = (columnId: string) => {
       if (window.confirm("Are you sure you want to delete this column and all its tasks? This is irreversible.")) {
           setBoard(prev => {
@@ -272,7 +288,7 @@ const App: React.FC = () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'noir-kanban-board.json';
+      a.download = 'mini-loop-board.json';
       a.click();
       URL.revokeObjectURL(url);
   };
@@ -307,26 +323,47 @@ const App: React.FC = () => {
       if(event.target) event.target.value = '';
   };
 
+  const headerButtonStyle = {
+    ...styles.iconButton,
+    border: `1px solid var(--border-default)`,
+    backgroundColor: 'var(--bg-surface-raised)'
+  };
+
+  const saveButtonStyle = {
+    ...headerButtonStyle,
+    color: 'var(--accent-blue)',
+    borderColor: 'var(--accent-blue)',
+  };
+
+  const loadButtonStyle = {
+    ...headerButtonStyle,
+    color: 'var(--priority-medium)',
+    borderColor: 'var(--priority-medium)',
+  };
+
+  const resetButtonStyle = {
+    ...headerButtonStyle,
+    color: 'var(--danger)',
+    borderColor: 'var(--danger)',
+  };
+
   return (
     <div style={styles.app}>
         <header style={styles.header}>
             <h1 style={styles.headerTitle}>
-                <Icon name="squares-four" weight="fill" size={24} style={{ color: 'var(--text-primary)' }} />
-                Noir Kanban
+                <Icon name="squares-four" weight="fill" size={22} style={{ color: 'var(--accent-primary)' }} />
+                Mini Loop
             </h1>
             <div style={styles.headerActions}>
-                <button onClick={handleSaveToFile} style={{ ...styles.button, ...styles.buttonSecondary }}>
-                    <Icon name="floppy-disk" size={16} />
-                    Save
+                <button title="Save Board" onClick={handleSaveToFile} style={saveButtonStyle}>
+                    <Icon name="floppy-disk" size={18} />
                 </button>
                  <input type="file" accept=".json" ref={fileInputRef} onChange={handleLoadFromFile} style={{ display: 'none' }} />
-                <button onClick={() => fileInputRef.current?.click()} style={{ ...styles.button, ...styles.buttonSecondary }}>
-                    <Icon name="folder-open" size={16} />
-                    Load
+                <button title="Load Board" onClick={() => fileInputRef.current?.click()} style={loadButtonStyle}>
+                    <Icon name="folder-open" size={18} />
                 </button>
-                <button onClick={resetBoard} style={{ ...styles.button, ...styles.buttonSecondary }}>
-                    <Icon name="arrow-clockwise" size={16} />
-                    Reset
+                <button title="Reset Board" onClick={resetBoard} style={resetButtonStyle}>
+                    <Icon name="arrow-clockwise" size={18} />
                 </button>
             </div>
         </header>
@@ -350,6 +387,7 @@ const App: React.FC = () => {
                                 onEditTask={handleOpenEditModal}
                                 onAddTask={() => handleOpenAddModal(column.id)}
                                 onDeleteColumn={handleDeleteColumn}
+                                onRenameColumn={(newTitle) => handleRenameColumn(column.id, newTitle)}
                             />
                         );
                     })}
@@ -368,6 +406,7 @@ const App: React.FC = () => {
                             onEditTask={() => {}}
                             onUpdateTask={() => {}}
                             onDeleteColumn={() => {}}
+                            onRenameColumn={() => {}}
                         />
                     ) : (
                         <TaskCard

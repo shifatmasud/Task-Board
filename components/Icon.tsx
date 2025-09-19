@@ -11,7 +11,12 @@ interface IconProps {
 }
 
 const Icon: React.FC<IconProps> = ({ name, weight = 'regular', size = 18, style, onClick }) => {
-  const className = `ph-${name}${weight !== 'regular' ? `-${weight}` : ''}`;
+  // Correctly constructs class names for Phosphor Icons Web.
+  // For regular weight: "ph ph-heart"
+  // For other weights: "ph-bold ph-heart"
+  const weightClass = weight === 'regular' ? 'ph' : `ph-${weight}`;
+  const nameClass = `ph-${name}`;
+  const className = `${weightClass} ${nameClass}`;
   
   const combinedStyle = {
     ...style,

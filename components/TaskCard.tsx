@@ -4,7 +4,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Task, Subtask } from '../types';
 import { Priority } from '../types';
-import { styles, getPriorityStyle } from '../style';
+import { styles, getPriorityIndicatorStyle } from '../style';
 import Icon from './Icon';
 
 interface TaskCardProps {
@@ -49,6 +49,8 @@ const SubtaskItem: React.FC<{subtask: Subtask, onToggle: () => void}> = ({subtas
 
 const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateTask, onEdit }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [currentTitle, setCurrentTitle] = useState(task.title);
   
   const {
     attributes,
@@ -81,6 +83,31 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateTask, onEdit }) => {
     style.opacity = 0.5;
   }
 
+  const handleTitleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsEditingTitle(true);
+  }
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCurrentTitle(e.target.value);
+  }
+
+  const handleTitleSave = () => {
+    if (currentTitle.trim() && currentTitle.trim() !== task.title) {
+        onUpdateTask({ ...task, title: currentTitle.trim() });
+    }
+    setIsEditingTitle(false);
+  }
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+        handleTitleSave();
+    } else if (e.key === 'Escape') {
+        setCurrentTitle(task.title);
+        setIsEditingTitle(false);
+    }
+    e.stopPropagation();
+  }
 
   const handleSubtaskToggle = (subtaskId: string) => {
     const updatedSubtasks = task.subtasks.map(subtask =>
@@ -91,16 +118,6 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateTask, onEdit }) => {
   
   const completedSubtasks = task.subtasks.filter(s => s.completed).length;
   const totalSubtasks = task.subtasks.length;
-
-  const getPriorityIcon = (priority: Priority) => {
-    switch (priority) {
-      case Priority.High: return "arrow-up";
-      case Priority.Medium: return "minus";
-      case Priority.Low: return "arrow-down";
-      default: return null;
-    }
-  }
-  const priorityIcon = getPriorityIcon(task.priority);
 
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -114,19 +131,35 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateTask, onEdit }) => {
       {...attributes}
       {...listeners}
       layoutId={task.id}
-      whileHover={{ backgroundColor: 'var(--bg-surface-hover)', borderColor: 'var(--text-tertiary)' }}
+      whileHover={{ backgroundColor: 'var(--bg-surface-hover)', borderColor: 'var(--border-default)' }}
       transition={{ duration: 0.2 }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onClick={onEdit}
     >
-        <div style={styles.dragHandle} onClick={(e) => e.stopPropagation()}>
-            <Icon name="dots-six-vertical" weight="bold" size={18} />
-        </div>
+        <div style={{...styles.priorityIndicator, ...getPriorityIndicatorStyle(task.priority)}} />
         
         <div style={styles.taskCardContent}>
-            <h3 style={styles.taskTitle}>{task.title}</h3>
-            {task.description && <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '0 0 12px 0', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{task.description}</p>}
+            {isEditingTitle ? (
+                <input
+                    style={{...styles.inlineEditInput, fontSize: '0.9rem', fontWeight: 500 }}
+                    value={currentTitle}
+                    onChange={handleTitleChange}
+                    onBlur={handleTitleSave}
+                    onKeyDown={handleTitleKeyDown}
+                    autoFocus
+                    onClick={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                />
+            ) : (
+                <h3 
+                    style={styles.taskTitle} 
+                    onDoubleClick={handleTitleDoubleClick}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
+                >{task.title}</h3>
+            )}
+            
+            {task.description && <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: '0 0 12px 0', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{task.description}</p>}
 
             {totalSubtasks > 0 && (
                 <div style={styles.checklist}>
@@ -135,12 +168,15 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateTask, onEdit }) => {
                 ))}
                 </div>
             )}
+            
+            {totalSubtasks > 0 && (
+                <div style={styles.progressBarContainer}>
+                    <div style={{ ...styles.progressBarFill, width: `${(completedSubtasks / totalSubtasks) * 100}%` }} />
+                </div>
+            )}
 
             <div style={styles.taskFooter}>
-                <span style={{ ...styles.priorityBadge, ...getPriorityStyle(task.priority) }}>
-                {priorityIcon && <Icon name={priorityIcon} weight="bold" size={14}/>}
-                {task.priority}
-                </span>
+                <div />
                 <div style={styles.taskMeta}>
                     {task.comments.length > 0 && (
                         <span style={styles.metaItem}>
@@ -160,10 +196,11 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateTask, onEdit }) => {
          <button 
             style={{ 
                 ...styles.taskEditButton, 
-                opacity: isHovered ? 1 : 0 ,
-                ...(isHovered && {backgroundColor: 'var(--bg-surface-overlay)', color: 'var(--text-primary)'})
+                ...(isHovered && { color: 'var(--text-primary)'})
             }} 
             onClick={handleEditClick}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
             aria-label="Edit task"
         >
             <Icon name="pencil-simple" size={16} />
