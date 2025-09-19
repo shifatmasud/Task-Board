@@ -18,9 +18,10 @@ interface ColumnProps {
   onDeleteColumn: (columnId: string) => void;
   onRenameColumn: (newTitle: string) => void;
   isDragOverlay?: boolean;
+  isMobile?: boolean;
 }
 
-const Column: React.FC<ColumnProps> = ({ column, onUpdateTask, onAddTask, onEditTask, onDeleteColumn, onRenameColumn, isDragOverlay = false }) => {
+const Column: React.FC<ColumnProps> = ({ column, onUpdateTask, onAddTask, onEditTask, onDeleteColumn, onRenameColumn, isDragOverlay = false, isMobile = false }) => {
   const { setNodeRef: setDroppableNodeRef, isOver } = useDroppable({ id: column.id });
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [currentTitle, setCurrentTitle] = useState(column.title);
@@ -45,6 +46,7 @@ const Column: React.FC<ColumnProps> = ({ column, onUpdateTask, onAddTask, onEdit
     ...styles.column,
     transition,
     transform: CSS.Transform.toString(transform),
+    ...(isMobile && { width: '100%', minWidth: 'unset' }),
   };
 
   if (isDragging) {

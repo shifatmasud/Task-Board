@@ -12,7 +12,7 @@ import {
     type DragStartEvent,
     DragOverlay,
 } from '@dnd-kit/core';
-import { arrayMove, sortableKeyboardCoordinates, SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
+import { arrayMove, sortableKeyboardCoordinates, SortableContext, horizontalListSortingStrategy, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 import type { BoardState, Column, Task } from './types';
 import { Priority } from './types';
@@ -87,6 +87,21 @@ const useProximityGlow = (ref: React.RefObject<HTMLButtonElement>, glowColor: st
   }, [ref, glowColor]);
 };
 
+const useMediaQuery = (query: string) => {
+    const [matches, setMatches] = useState(window.matchMedia(query).matches);
+
+    useEffect(() => {
+        const mediaQueryList = window.matchMedia(query);
+        const listener = (event: MediaQueryListEvent) => setMatches(event.matches);
+
+        mediaQueryList.addEventListener('change', listener);
+        return () => mediaQueryList.removeEventListener('change', listener);
+    }, [query]);
+
+    return matches;
+};
+
+
 const App: React.FC = () => {
     const [board, setBoard] = useState<BoardState>(() => {
     try {
@@ -110,6 +125,7 @@ const App: React.FC = () => {
   const saveButtonRef = useRef<HTMLButtonElement>(null);
   const loadButtonRef = useRef<HTMLButtonElement>(null);
   const resetButtonRef = useRef<HTMLButtonElement>(null);
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   useProximityGlow(saveButtonRef, 'var(--accent-blue)');
   useProximityGlow(loadButtonRef, 'var(--priority-medium)');
@@ -394,7 +410,7 @@ const App: React.FC = () => {
 
   return (
     <div style={styles.app}>
-        <header style={styles.header}>
+        <header style={{...styles.header, ...(isMobile && { padding: '8px 16px' })}}>
             <h1 style={styles.headerTitle}>
                 <Icon name="squares-four" weight="fill" size={22} style={{ color: 'var(--accent-primary)' }} />
                 Mini Loop
@@ -420,8 +436,18 @@ const App: React.FC = () => {
             onDragEnd={handleDragEnd}
             onDragCancel={() => setActiveItem(null)}
         >
-            <div style={styles.boardContainer}>
-                <SortableContext items={board.columnOrder} strategy={horizontalListSortingStrategy}>
+            <div style={{
+                ...styles.boardContainer,
+                ...(isMobile && {
+                    flexDirection: 'column',
+                    padding: '16px',
+                    gap: '16px',
+                    alignItems: 'stretch',
+                    overflowX: 'hidden',
+                    overflowY: 'auto'
+                })
+            }}>
+                <SortableContext items={board.columnOrder} strategy={isMobile ? verticalListSortingStrategy : horizontalListSortingStrategy}>
                     {board.columnOrder.map(columnId => {
                         const column = board.columns[columnId];
                         return (
@@ -433,11 +459,15 @@ const App: React.FC = () => {
                                 onAddTask={() => handleOpenAddModal(column.id)}
                                 onDeleteColumn={handleDeleteColumn}
                                 onRenameColumn={(newTitle) => handleRenameColumn(column.id, newTitle)}
+                                isMobile={isMobile}
                             />
                         );
                     })}
                 </SortableContext>
-                 <button style={styles.addColumnButton} onClick={handleAddColumn}>
+                 <button style={{
+                    ...styles.addColumnButton,
+                    ...(isMobile && { width: '100%', minWidth: 'unset' })
+                  }} onClick={handleAddColumn}>
                     <Icon name="plus" weight="bold" size={16} />
                     Add Another Column
                 </button>
@@ -453,6 +483,7 @@ const App: React.FC = () => {
                             onDeleteColumn={() => {}}
                             onRenameColumn={() => {}}
                             isDragOverlay
+                            isMobile={isMobile}
                         />
                     ) : (
                         <TaskCard
