@@ -275,25 +275,22 @@ const App: React.FC = () => {
     }
   }, [modalState, handleUpdateTask]);
 
-  const handleDeleteTask = useCallback((taskId: string) => {
-    if (!window.confirm("Are you sure you want to delete this task? This cannot be undone.")) {
-        return;
-    }
+ const handleDeleteTask = useCallback((taskId: string) => {
     setBoard(prevBoard => {
-      const newColumns = { ...prevBoard.columns };
-      for (const columnId in newColumns) {
-        if (newColumns[columnId].tasks.some(task => task.id === taskId)) {
-            newColumns[columnId] = {
-                ...newColumns[columnId],
-                tasks: newColumns[columnId].tasks.filter(task => task.id !== taskId),
-            };
-            break;
+        const newColumns = { ...prevBoard.columns };
+        for (const columnId in newColumns) {
+            if (newColumns[columnId].tasks.some(task => task.id === taskId)) {
+                newColumns[columnId] = {
+                    ...newColumns[columnId],
+                    tasks: newColumns[columnId].tasks.filter(task => task.id !== taskId),
+                };
+                break;
+            }
         }
-      }
-      return { ...prevBoard, columns: newColumns };
+        handleCloseModal();
+        return { ...prevBoard, columns: newColumns };
     });
-    handleCloseModal();
-  }, [handleCloseModal]);
+}, [handleCloseModal]);
 
   const handleAddColumn = useCallback(() => {
       const newColumnId = `col-${Date.now()}`;
@@ -303,6 +300,7 @@ const App: React.FC = () => {
           tasks: [],
       };
       setBoard(prev => ({
+          ...prev,
           columnOrder: [...prev.columnOrder, newColumnId],
           columns: { ...prev.columns, [newColumnId]: newColumn },
       }));
@@ -319,13 +317,11 @@ const App: React.FC = () => {
   }, []);
 
   const handleDeleteColumn = useCallback((columnId: string) => {
-    if (!window.confirm("Are you sure you want to delete this column and all its tasks? This is irreversible.")) {
-        return;
-    }
     setBoard(prevBoard => {
       const newColumnOrder = prevBoard.columnOrder.filter(id => id !== columnId);
       const { [columnId]: _deletedColumn, ...restColumns } = prevBoard.columns;
       return {
+          ...prevBoard,
           columnOrder: newColumnOrder,
           columns: restColumns,
       };
@@ -333,9 +329,7 @@ const App: React.FC = () => {
   }, []);
 
   const resetBoard = useCallback(() => {
-    if(window.confirm("Are you sure you want to reset the board? This cannot be undone.")) {
-      setBoard(getInitialData());
-    }
+    setBoard(getInitialData());
   }, []);
   
   const handleSaveToFile = useCallback(() => {
@@ -352,11 +346,6 @@ const App: React.FC = () => {
   const handleLoadFromFile = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
       if (!file) return;
-
-      if (!window.confirm("Loading a new board will replace your current one. Are you sure you want to continue?")) {
-          if(event.target) event.target.value = '';
-          return;
-      }
       
       const reader = new FileReader();
       reader.onload = (e) => {
