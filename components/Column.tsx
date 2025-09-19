@@ -9,6 +9,7 @@ import type { Column as ColumnType, Task } from '../types';
 import { styles } from '../style';
 import TaskCard from './TaskCard';
 import Icon from './Icon';
+import AnimatedCounter from './AnimatedCounter';
 
 interface ColumnProps {
   column: ColumnType;
@@ -25,6 +26,7 @@ const Column: React.FC<ColumnProps> = ({ column, onUpdateTask, onAddTask, onEdit
   const { setNodeRef: setDroppableNodeRef, isOver } = useDroppable({ id: column.id });
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [currentTitle, setCurrentTitle] = useState(column.title);
+  const [isHeaderHovered, setIsHeaderHovered] = useState(false);
 
   const {
     setNodeRef,
@@ -93,7 +95,13 @@ const Column: React.FC<ColumnProps> = ({ column, onUpdateTask, onAddTask, onEdit
 
   return (
     <div ref={setNodeRef} style={style}>
-      <div style={styles.columnHeader} {...attributes} {...listeners}>
+      <div 
+        style={{...styles.columnHeader, ...(isHeaderHovered && !isDragging && {backgroundColor: 'var(--bg-surface-hover)'})}} 
+        {...attributes} 
+        {...listeners}
+        onMouseEnter={() => setIsHeaderHovered(true)}
+        onMouseLeave={() => setIsHeaderHovered(false)}
+      >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexGrow: 1, minWidth: 0 }}>
             {isEditingTitle ? (
                 <input
@@ -113,25 +121,35 @@ const Column: React.FC<ColumnProps> = ({ column, onUpdateTask, onAddTask, onEdit
                     onTouchStart={(e) => e.stopPropagation()}
                 >{column.title}</h2>
             )}
-            <span style={styles.taskCount}>{column.tasks.length}</span>
+            <motion.span 
+              style={styles.taskCount}
+              animate={{ scale: isHeaderHovered ? 1.1 : 1 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 10 }}
+            >
+                <AnimatedCounter value={column.tasks.length} fontSize={12} />
+            </motion.span>
         </div>
         <div style={styles.columnHeaderActions}>
-            <button 
+            <motion.button 
                 style={styles.iconButton} 
                 onClick={onAddTask}
                 onMouseDown={(e) => e.stopPropagation()}
                 onTouchStart={(e) => e.stopPropagation()}
+                whileHover={{ scale: 1.1, color: 'var(--text-primary)' }}
+                whileTap={{ scale: 0.9 }}
             >
                 <Icon name="plus" size={20} />
-            </button>
-            <button 
+            </motion.button>
+            <motion.button 
                 style={{...styles.iconButton, cursor: 'pointer'}} 
                 onClick={handleDeleteClick}
                 onMouseDown={(e) => e.stopPropagation()}
                 onTouchStart={(e) => e.stopPropagation()}
+                whileHover={{ scale: 1.1, color: 'var(--danger)' }}
+                whileTap={{ scale: 0.9 }}
             >
                 <Icon name="trash" size={20} />
-            </button>
+            </motion.button>
         </div>
       </div>
       <SortableContext 

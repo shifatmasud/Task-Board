@@ -35,7 +35,7 @@ export const styles: { [key: string]: React.CSSProperties | { [key: string]: Rea
     color: 'var(--text-primary)',
     display: 'flex',
     alignItems: 'center',
-    gap: '10px'
+    gap: '2px'
   },
   inlineEditInput: {
     width: '100%',
@@ -90,9 +90,11 @@ export const styles: { [key: string]: React.CSSProperties | { [key: string]: Rea
     color: 'var(--text-primary)',
   },
   taskCount: {
+    ...mixins.flexCenter,
     backgroundColor: 'var(--bg-base)',
     color: 'var(--text-secondary)',
-    padding: '2px 8px',
+    padding: '0 8px',
+    height: '22px',
     borderRadius: '12px',
     fontSize: '0.75rem',
     fontWeight: 500,
@@ -110,9 +112,10 @@ export const styles: { [key: string]: React.CSSProperties | { [key: string]: Rea
     backgroundColor: 'var(--bg-surface-raised)',
     borderRadius: 'var(--border-radius-md)',
     border: `1px solid var(--border-subtle)`,
-    transition: 'background-color 0.2s, box-shadow 0.2s, transform 0.2s, border-color 0.2s, opacity 0.2s',
+    transition: 'background-color 0.2s, border-color 0.2s, opacity 0.2s',
     display: 'flex',
     position: 'relative',
+    overflow: 'hidden',
     gap: '8px',
     alignItems: 'flex-start',
     cursor: 'grab',
@@ -171,7 +174,7 @@ export const styles: { [key: string]: React.CSSProperties | { [key: string]: Rea
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    transition: 'background-color 0.2s, color 0.2s, opacity 0.2s',
+    transition: 'background-color 0.2s, color 0.2s',
     opacity: 1,
   },
   checklist: {
@@ -409,11 +412,11 @@ export const styles: { [key: string]: React.CSSProperties | { [key: string]: Rea
 export const getPriorityIndicatorStyle = (priority: Priority): React.CSSProperties => {
   switch (priority) {
     case Priority.High:
-      return { backgroundColor: 'var(--priority-high)' };
+      return { backgroundColor: 'var(--priority-high)', animation: 'subtle-glow-red 2.5s ease-in-out infinite' };
     case Priority.Medium:
-      return { backgroundColor: 'var(--priority-medium)' };
+      return { backgroundColor: 'var(--priority-medium)', animation: 'subtle-glow-yellow 2.5s ease-in-out infinite' };
     case Priority.Low:
-      return { backgroundColor: 'var(--priority-low)' };
+      return { backgroundColor: 'var(--priority-low)', animation: 'subtle-glow-green 2.5s ease-in-out infinite' };
     default:
       return { backgroundColor: 'var(--priority-none)' };
   }

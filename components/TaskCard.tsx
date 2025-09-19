@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Task, Subtask } from '../types';
 import { Priority } from '../types';
 import { styles, getPriorityIndicatorStyle } from '../style';
 import Icon from './Icon';
+import AnimatedCounter from './AnimatedCounter';
 
 interface TaskCardProps {
   task: Task;
@@ -52,6 +53,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateTask, onEdit, isDragO
   const [isHovered, setIsHovered] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [currentTitle, setCurrentTitle] = useState(task.title);
+  const cardRef = useRef<HTMLDivElement | null>(null);
   
   const {
     attributes,
@@ -68,6 +70,31 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateTask, onEdit, isDragO
       },
       disabled: isDragOverlay,
   });
+  
+  const handleNodeRef = useCallback((node: HTMLDivElement | null) => {
+    setNodeRef(node);
+    cardRef.current = node;
+  }, [setNodeRef]);
+  
+  useEffect(() => {
+    const element = cardRef.current;
+    if (!element || isDragOverlay) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = element.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      element.style.setProperty('--cursor-x', `${x}px`);
+      element.style.setProperty('--cursor-y', `${y}px`);
+    };
+
+    element.addEventListener('mousemove', handleMouseMove);
+
+    return () => {
+      element.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, [isDragOverlay]);
+
 
   const dndTransform = CSS.Transform.toString(transform);
 
@@ -134,17 +161,27 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateTask, onEdit, isDragO
 
   return (
     <motion.div
-      ref={setNodeRef}
+      ref={handleNodeRef}
+      className={!isDragOverlay ? 'task-card-interactive-hover' : ''}
       style={style}
       {...attributes}
       {...listeners}
       layoutId={isDragOverlay ? undefined : task.id}
-      whileHover={isDragOverlay ? {} : { backgroundColor: 'var(--bg-surface-hover)', borderColor: 'var(--border-default)' }}
-      transition={{ duration: 0.2 }}
+      whileHover={isDragOverlay ? {} : { 
+        y: -3,
+        backgroundColor: 'var(--bg-surface-hover)', 
+        borderColor: 'var(--border-default)',
+        boxShadow: 'var(--shadow-md)' 
+      }}
+      transition={{ type: 'spring', stiffness: 400, damping: 20 }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-        <div style={{...styles.priorityIndicator, ...getPriorityIndicatorStyle(task.priority)}} />
+        <motion.div 
+            style={{...styles.priorityIndicator, ...getPriorityIndicatorStyle(task.priority)}}
+            animate={{ width: isHovered ? 8 : 4 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+        />
         
         <div style={styles.taskCardContent}>
             {isEditingTitle ? (
@@ -187,32 +224,49 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateTask, onEdit, isDragO
                 <div />
                 <div style={styles.taskMeta}>
                     {task.comments.length > 0 && (
-                        <span style={styles.metaItem}>
+                        <motion.span 
+                            style={styles.metaItem}
+                            animate={{ scale: isHovered ? 1.1 : 1 }}
+                            transition={{ type: 'spring', stiffness: 300, damping: 10, delay: 0.1 }}
+                        >
                             <Icon name="chat-circle-dots" weight="bold" size={14} />
-                            {task.comments.length}
-                        </span>
+                            <AnimatedCounter value={task.comments.length} fontSize={13} />
+                        </motion.span>
                     )}
                     {totalSubtasks > 0 && (
-                        <span style={styles.metaItem}>
+                        <motion.span 
+                            style={styles.metaItem}
+                            animate={{ scale: isHovered ? 1.1 : 1 }}
+                            transition={{ type: 'spring', stiffness: 300, damping: 10, delay: 0.15 }}
+                        >
                             <Icon name="check-square" weight="bold" size={14} />
-                            {completedSubtasks}/{totalSubtasks}
-                        </span>
+                            <AnimatedCounter value={completedSubtasks} fontSize={13} />
+                            <span style={{fontSize: '0.8rem', margin: '0 2px'}}>/</span>
+                            <AnimatedCounter value={totalSubtasks} fontSize={13} />
+                        </motion.span>
                     )}
                 </div>
             </div>
         </div>
-         <button 
-            style={{ 
-                ...styles.taskEditButton, 
-                ...(isHovered && { color: 'var(--text-primary)'})
-            }} 
-            onClick={handleEditClick}
-            onMouseDown={(e) => e.stopPropagation()}
-            onTouchStart={(e) => e.stopPropagation()}
-            aria-label="Edit task"
-        >
-            <Icon name="pencil-simple" size={16} />
-        </button>
+        <AnimatePresence>
+         {isHovered && (
+            <motion.button 
+                style={{ ...styles.taskEditButton }} 
+                onClick={handleEditClick}
+                onMouseDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
+                aria-label="Edit task"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 10 }}
+                transition={{ duration: 0.2 }}
+                whileHover={{ scale: 1.1, color: 'var(--text-primary)' }}
+                whileTap={{ scale: 0.9 }}
+            >
+                <Icon name="pencil-simple" size={16} />
+            </motion.button>
+         )}
+        </AnimatePresence>
     </motion.div>
   );
 };

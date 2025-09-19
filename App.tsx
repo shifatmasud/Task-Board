@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
     DndContext,
@@ -13,6 +11,8 @@ import {
     DragOverlay,
 } from '@dnd-kit/core';
 import { arrayMove, sortableKeyboardCoordinates, SortableContext, horizontalListSortingStrategy, verticalListSortingStrategy } from '@dnd-kit/sortable';
+// FIX: Import `Variants` type from framer-motion to explicitly type animation variants.
+import { motion, type Variants } from 'framer-motion';
 
 import type { BoardState, Column, Task } from './types';
 import { Priority } from './types';
@@ -390,42 +390,114 @@ const App: React.FC = () => {
     backgroundColor: 'var(--bg-surface-raised)'
   };
 
-  const saveButtonStyle = {
+  const saveButtonStyle: React.CSSProperties = {
     ...headerButtonStyle,
     color: 'var(--accent-blue)',
     borderColor: 'var(--accent-blue)',
+    animation: 'subtle-glow-blue 2.5s ease-in-out infinite',
   };
 
-  const loadButtonStyle = {
+  const loadButtonStyle: React.CSSProperties = {
     ...headerButtonStyle,
     color: 'var(--priority-medium)',
     borderColor: 'var(--priority-medium)',
+    animation: 'subtle-glow-yellow 2.5s ease-in-out infinite',
   };
 
-  const resetButtonStyle = {
+  const resetButtonStyle: React.CSSProperties = {
     ...headerButtonStyle,
     color: 'var(--danger)',
     borderColor: 'var(--danger)',
+    animation: 'subtle-glow-red 2.5s ease-in-out infinite',
+  };
+
+  // FIX: Explicitly type with `Variants` to resolve TypeScript error with framer-motion.
+  const titleContainerVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.08,
+      },
+    },
+  };
+  
+  // FIX: Explicitly type with `Variants` to resolve TypeScript error.
+  // This ensures properties like `transition: { type: 'spring' }` are correctly typed.
+  const letterVariants: Variants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { y: 0, opacity: 0.8 },
+    hover: {
+      y: -3,
+      color: 'var(--accent-primary-hover)',
+      opacity: 1,
+      transition: { type: 'spring', stiffness: 300, damping: 15 },
+    },
   };
 
   return (
     <div style={styles.app}>
         <header style={{...styles.header, ...(isMobile && { padding: '8px 16px' })}}>
-            <h1 style={styles.headerTitle}>
-                <Icon name="squares-four" weight="fill" size={22} style={{ color: 'var(--accent-primary)' }} />
-                Mini Loop
-            </h1>
+            <motion.div 
+                style={{...styles.headerTitle, cursor: 'pointer'}}
+                variants={titleContainerVariants}
+                initial="hidden"
+                animate="visible"
+                whileHover="hover"
+            >
+                <motion.div variants={letterVariants} style={{ marginRight: '8px' }}>
+                    <Icon name="squares-four" weight="fill" size={22} style={{ color: 'var(--accent-primary)' }} />
+                </motion.div>
+                 {'Mini'.split('').map((char, index) => (
+                    <motion.span key={`mini-${index}`} variants={letterVariants} style={{display: 'inline-block', position: 'relative'}}>
+                        {char}
+                    </motion.span>
+                ))}
+                <motion.span variants={letterVariants} style={{display: 'inline-block', width: '0.5em'}} />
+                {'Loop'.split('').map((char, index) => (
+                    <motion.span key={`loop-${index}`} variants={letterVariants} style={{display: 'inline-block', position: 'relative'}}>
+                        {char}
+                    </motion.span>
+                ))}
+            </motion.div>
             <div style={styles.headerActions}>
-                <button ref={saveButtonRef} title="Save Board" onClick={handleSaveToFile} style={saveButtonStyle} className="proximity-glow-button">
+                <motion.button 
+                    ref={saveButtonRef} 
+                    title="Save Board" 
+                    onClick={handleSaveToFile} 
+                    style={saveButtonStyle} 
+                    className="proximity-glow-button"
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                >
                     <Icon name="floppy-disk" size={18} />
-                </button>
+                </motion.button>
                  <input type="file" accept=".json" ref={fileInputRef} onChange={handleLoadFromFile} style={{ display: 'none' }} />
-                <button ref={loadButtonRef} title="Load Board" onClick={() => fileInputRef.current?.click()} style={loadButtonStyle} className="proximity-glow-button">
+                <motion.button 
+                    ref={loadButtonRef} 
+                    title="Load Board" 
+                    onClick={() => fileInputRef.current?.click()} 
+                    style={loadButtonStyle} 
+                    className="proximity-glow-button"
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                >
                     <Icon name="folder-open" size={18} />
-                </button>
-                <button ref={resetButtonRef} title="Reset Board" onClick={resetBoard} style={resetButtonStyle} className="proximity-glow-button">
+                </motion.button>
+                <motion.button 
+                    ref={resetButtonRef} 
+                    title="Reset Board" 
+                    onClick={resetBoard} 
+                    style={resetButtonStyle} 
+                    className="proximity-glow-button"
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                >
                     <Icon name="arrow-clockwise" size={18} />
-                </button>
+                </motion.button>
             </div>
         </header>
 
@@ -464,13 +536,25 @@ const App: React.FC = () => {
                         );
                     })}
                 </SortableContext>
-                 <button style={{
+                 <motion.button style={{
                     ...styles.addColumnButton,
                     ...(isMobile && { width: '100%', minWidth: 'unset' })
-                  }} onClick={handleAddColumn}>
-                    <Icon name="plus" weight="bold" size={16} />
+                  }} 
+                  onClick={handleAddColumn}
+                  whileHover={{ 
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)', 
+                    borderColor: 'var(--accent-primary)',
+                    color: 'var(--text-primary)',
+                    scale: 1.02
+                  }}
+                  whileTap={{ scale: 0.98 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                >
+                    <motion.div whileHover={{ rotate: 90 }}>
+                        <Icon name="plus" weight="bold" size={16} />
+                    </motion.div>
                     Add Another Column
-                </button>
+                </motion.button>
             </div>
              <DragOverlay>
                 {activeItem ? (
