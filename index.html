@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Noir Kanban Board</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+      :root {
+        --bg-base: #0A0A0A;
+        --bg-surface: #141414;
+        --bg-surface-raised: #1F1F1F;
+        --bg-surface-overlay: #2A2A2A;
+        --bg-surface-hover: #2A2A2A;
+        
+        --text-primary: #EAEAEA;
+        --text-secondary: #888888;
+        --text-tertiary: #555555;
+        
+        --border-default: #2A2A2A;
+        --border-subtle: #1A1A1A;
+        
+        --accent-primary: #EAEAEA;
+        --accent-primary-hover: #ffffff;
+        --text-on-accent: #0A0A0A;
+
+        --danger: #e57373;
+        --danger-hover: #ef5350;
+
+        --priority-high-text: #EAEAEA;
+        --priority-medium-text: #b1b1b1;
+        --priority-low-text: #888888;
+        --priority-none-text: #555555;
+
+        --shadow-sm: 0 1px 2px rgba(0,0,0,0.6);
+        --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.6), 0 2px 4px -1px rgba(0,0,0,0.4);
+        --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.8), 0 4px 6px -2px rgba(0,0,0,0.6);
+
+        --border-radius-sm: 3px;
+        --border-radius-md: 4px;
+        --border-radius-lg: 6px;
+      }
+      body {
+        margin: 0;
+        font-family: 'Inter', sans-serif;
+        background-color: var(--bg-base);
+        color: var(--text-primary);
+        overflow: hidden;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        user-select: none;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      ::-webkit-scrollbar-track {
+        background: var(--bg-base);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #333;
+        border-radius: 5px;
+        border: 2px solid var(--bg-base);
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #444;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "react/": "https://aistudiocdn.com/react@^19.1.1/",
+    "framer-motion": "https://aistudiocdn.com/framer-motion@^12.23.16",
+    "@dnd-kit/core": "https://aistudiocdn.com/@dnd-kit/core@^6.1.0",
+    "@dnd-kit/sortable": "https://aistudiocdn.com/@dnd-kit/sortable@^7.0.2",
+    "@dnd-kit/utilities": "https://aistudiocdn.com/@dnd-kit/utilities@^3.2.2"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

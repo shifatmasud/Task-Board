@@ -1,0 +1,5 @@
+{
+  "name": "Noir Kanban Board",
+  "description": "A feature-rich Kanban board with a sleek 'noir' theme. It supports drag-and-drop, task checklists, priority levels, and local save/load functionality, all wrapped in a fluid, responsive interface.",
+  "requestFramePermissions": []
+}

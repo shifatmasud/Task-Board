@@ -1,0 +1,394 @@
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { 
+    DndContext,
+    PointerSensor, 
+    KeyboardSensor, 
+    useSensor, 
+    useSensors,
+    closestCorners,
+    type DragEndEvent,
+    type DragStartEvent,
+    DragOverlay,
+} from '@dnd-kit/core';
+import { arrayMove, sortableKeyboardCoordinates, SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
+
+import type { BoardState, Column, Task } from './types';
+import { Priority } from './types';
+import ColumnComponent from './components/Column';
+import TaskCard from './components/TaskCard';
+import TaskModal from './components/AddTaskModal';
+import { styles } from './style';
+import Icon from './components/Icon';
+
+const initialData: BoardState = {
+  columns: {
+    'col-1': {
+      id: 'col-1',
+      title: 'To Do',
+      tasks: [
+        { id: 'task-1', title: 'Design the noir theme UI', priority: Priority.High, subtasks: [{id: 's1', text:'Choose color palette', completed: true}, {id: 's2', text:'Select fonts', completed: false}], comments: [] },
+        { id: 'task-2', title: 'Implement drag and drop functionality', priority: Priority.High, subtasks: [], comments: [] },
+      ],
+    },
+    'col-2': {
+      id: 'col-2',
+      title: 'In Progress',
+      tasks: [
+        { id: 'task-3', title: 'Develop the main App component', description: 'Setup state management and local storage', priority: Priority.Medium, subtasks: [], comments: [] },
+      ],
+    },
+    'col-3': {
+      id: 'col-3',
+      title: 'Done',
+      tasks: [
+        { id: 'task-4', title: 'Setup project structure', priority: Priority.Low, subtasks: [], comments: [] },
+      ],
+    },
+  },
+  columnOrder: ['col-1', 'col-2', 'col-3'],
+};
+
+const App: React.FC = () => {
+    const [board, setBoard] = useState<BoardState>(() => {
+    try {
+      const savedBoard = localStorage.getItem('kanbanBoardState');
+      return savedBoard ? JSON.parse(savedBoard) : initialData;
+    } catch (error) {
+      console.error("Could not load board state from local storage", error);
+      return initialData;
+    }
+  });
+
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean;
+    mode: 'add' | 'edit';
+    task?: Task;
+    columnId?: string;
+  }>({ isOpen: false, mode: 'add' });
+  
+  const [activeItem, setActiveItem] = useState<Task | Column | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('kanbanBoardState', JSON.stringify(board));
+    } catch (error) {
+      console.error("Could not save board state to local storage", error);
+    }
+  }, [board]);
+  
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+        coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+  
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    const type = active.data.current?.type;
+
+    if (type === 'Column') {
+      setActiveItem(board.columns[active.id as string]);
+    } else if (type === 'Task') {
+      const column = Object.values(board.columns).find(col => col.tasks.some(t => t.id === active.id));
+      const task = column?.tasks.find(t => t.id === active.id);
+      if (task) setActiveItem(task);
+    }
+  };
+
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActiveItem(null);
+    const { active, over } = event;
+
+    if (!over) return;
+
+    const activeId = active.id.toString();
+    const overId = over.id.toString();
+
+    if (activeId === overId) return;
+
+    const activeType = active.data.current?.type;
+    
+    // Dragging a Column
+    if (activeType === 'Column') {
+        setBoard(board => {
+            const oldIndex = board.columnOrder.indexOf(activeId);
+            const newIndex = board.columnOrder.indexOf(overId);
+            if (oldIndex !== -1 && newIndex !== -1) {
+                return {
+                    ...board,
+                    columnOrder: arrayMove(board.columnOrder, oldIndex, newIndex),
+                };
+            }
+            return board;
+        });
+        return;
+    }
+    
+    // Dragging a Task
+    const activeColumnId = Object.keys(board.columns).find(colId => board.columns[colId].tasks.some(t => t.id === activeId));
+    let overColumnId = Object.keys(board.columns).find(colId => board.columns[colId].tasks.some(t => t.id === overId));
+
+    if (!overColumnId && board.columns[overId]) {
+        overColumnId = overId;
+    }
+    
+    if (!activeColumnId || !overColumnId) return;
+    
+    const activeColumn = board.columns[activeColumnId];
+    const overColumn = board.columns[overColumnId];
+    
+    if (activeColumnId === overColumnId) {
+        const oldIndex = activeColumn.tasks.findIndex(t => t.id === activeId);
+        const newIndex = overColumn.tasks.findIndex(t => t.id === overId);
+        
+        if (oldIndex !== -1 && newIndex !== -1) {
+            const newTasks = arrayMove(activeColumn.tasks, oldIndex, newIndex);
+            const newColumns = {
+                ...board.columns,
+                [activeColumnId]: { ...activeColumn, tasks: newTasks }
+            };
+            setBoard({ ...board, columns: newColumns });
+        }
+    } else {
+        const sourceTasks = [...activeColumn.tasks];
+        const destTasks = [...overColumn.tasks];
+        
+        const sourceIndex = sourceTasks.findIndex(t => t.id === activeId);
+        const [movedTask] = sourceTasks.splice(sourceIndex, 1);
+        
+        let destIndex = destTasks.findIndex(t => t.id === overId);
+        if (destIndex === -1) {
+            destIndex = destTasks.length;
+        }
+        destTasks.splice(destIndex, 0, movedTask);
+        
+        const newColumns = {
+            ...board.columns,
+            [activeColumnId]: { ...activeColumn, tasks: sourceTasks },
+            [overColumnId]: { ...overColumn, tasks: destTasks }
+        };
+        setBoard({ ...board, columns: newColumns });
+    }
+  };
+  
+  const handleOpenAddModal = (columnId: string) => {
+    setModalState({ isOpen: true, mode: 'add', columnId });
+  };
+  
+  const handleOpenEditModal = (task: Task) => {
+      const columnId = Object.values(board.columns).find(col => col.tasks.some(t => t.id === task.id))?.id;
+      if (columnId) {
+        setModalState({ isOpen: true, mode: 'edit', task, columnId });
+      }
+  };
+
+  const handleCloseModal = () => {
+      setModalState({ isOpen: false, mode: 'add' });
+  };
+
+  const handleSaveTask = (taskData: Omit<Task, 'id'>) => {
+    if (modalState.mode === 'add' && modalState.columnId) {
+        const newTask: Task = { ...taskData, id: `task-${Date.now()}`};
+        const column = board.columns[modalState.columnId];
+        const updatedTasks = [...column.tasks, newTask];
+        const updatedColumn: Column = { ...column, tasks: updatedTasks };
+        setBoard(prev => ({...prev, columns: {...prev.columns, [modalState.columnId as string]: updatedColumn }}));
+    } else if (modalState.mode === 'edit' && modalState.task) {
+        const updatedTask = { ...modalState.task, ...taskData };
+        handleUpdateTask(updatedTask);
+    }
+  };
+
+  const handleUpdateTask = useCallback((updatedTask: Task) => {
+      setBoard(prev => {
+          const newColumns = { ...prev.columns };
+          for (const columnId in newColumns) {
+              const column = newColumns[columnId];
+              const taskIndex = column.tasks.findIndex(t => t.id === updatedTask.id);
+              if (taskIndex > -1) {
+                  const newTasks = [...column.tasks];
+                  newTasks[taskIndex] = updatedTask;
+                  newColumns[columnId] = { ...column, tasks: newTasks };
+                  break; 
+              }
+          }
+          return { ...prev, columns: newColumns };
+      });
+  }, []);
+
+  const handleDeleteTask = useCallback(() => {
+    if (modalState.task && modalState.columnId) {
+        const { task, columnId } = modalState;
+        setBoard(prev => {
+            const newColumns = { ...prev.columns };
+            const column = newColumns[columnId];
+            const newTasks = column.tasks.filter(t => t.id !== task.id);
+            newColumns[columnId] = {...column, tasks: newTasks};
+            return { ...prev, columns: newColumns };
+        });
+    }
+  }, [modalState.task, modalState.columnId]);
+
+  const handleAddColumn = () => {
+      const newColumnId = `col-${Date.now()}`;
+      const newColumn: Column = {
+          id: newColumnId,
+          title: "New Column",
+          tasks: [],
+      };
+      setBoard(prev => ({
+          columnOrder: [...prev.columnOrder, newColumnId],
+          columns: { ...prev.columns, [newColumnId]: newColumn },
+      }));
+  };
+  
+  const handleDeleteColumn = (columnId: string) => {
+      if (window.confirm("Are you sure you want to delete this column and all its tasks? This is irreversible.")) {
+          setBoard(prev => {
+              const newColumns = { ...prev.columns };
+              delete newColumns[columnId];
+              const newColumnOrder = prev.columnOrder.filter(id => id !== columnId);
+              return {
+                  columnOrder: newColumnOrder,
+                  columns: newColumns,
+              };
+          });
+      }
+  };
+
+  const resetBoard = () => {
+    if(window.confirm("Are you sure you want to reset the board? This cannot be undone.")) {
+      setBoard(initialData);
+    }
+  };
+  
+  const handleSaveToFile = () => {
+      const boardJson = JSON.stringify(board, null, 2);
+      const blob = new Blob([boardJson], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'noir-kanban-board.json';
+      a.click();
+      URL.revokeObjectURL(url);
+  };
+  
+  const handleLoadFromFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      if (!window.confirm("Loading a new board will replace your current one. Are you sure you want to continue?")) {
+          if(event.target) event.target.value = '';
+          return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+          try {
+              const text = e.target?.result;
+              if (typeof text === 'string') {
+                  const loadedBoard = JSON.parse(text);
+                  if (loadedBoard.columns && loadedBoard.columnOrder) {
+                      setBoard(loadedBoard);
+                  } else {
+                      alert('Invalid board file format.');
+                  }
+              }
+          } catch (error) {
+              console.error("Failed to parse board file", error);
+              alert('Failed to load board file. It may be corrupted.');
+          }
+      };
+      reader.readAsText(file);
+      if(event.target) event.target.value = '';
+  };
+
+  return (
+    <div style={styles.app}>
+        <header style={styles.header}>
+            <h1 style={styles.headerTitle}>
+                <Icon name="squares-four" weight="fill" size={24} style={{ color: 'var(--text-primary)' }} />
+                Noir Kanban
+            </h1>
+            <div style={styles.headerActions}>
+                <button onClick={handleSaveToFile} style={{ ...styles.button, ...styles.buttonSecondary }}>
+                    <Icon name="floppy-disk" size={16} />
+                    Save
+                </button>
+                 <input type="file" accept=".json" ref={fileInputRef} onChange={handleLoadFromFile} style={{ display: 'none' }} />
+                <button onClick={() => fileInputRef.current?.click()} style={{ ...styles.button, ...styles.buttonSecondary }}>
+                    <Icon name="folder-open" size={16} />
+                    Load
+                </button>
+                <button onClick={resetBoard} style={{ ...styles.button, ...styles.buttonSecondary }}>
+                    <Icon name="arrow-clockwise" size={16} />
+                    Reset
+                </button>
+            </div>
+        </header>
+
+        <DndContext 
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragCancel={() => setActiveItem(null)}
+        >
+            <div style={styles.boardContainer}>
+                <SortableContext items={board.columnOrder} strategy={horizontalListSortingStrategy}>
+                    {board.columnOrder.map(columnId => {
+                        const column = board.columns[columnId];
+                        return (
+                            <ColumnComponent
+                                key={column.id}
+                                column={column}
+                                onUpdateTask={handleUpdateTask}
+                                onEditTask={handleOpenEditModal}
+                                onAddTask={() => handleOpenAddModal(column.id)}
+                                onDeleteColumn={handleDeleteColumn}
+                            />
+                        );
+                    })}
+                </SortableContext>
+                 <button style={styles.addColumnButton} onClick={handleAddColumn}>
+                    <Icon name="plus" weight="bold" size={16} />
+                    Add Another Column
+                </button>
+            </div>
+             <DragOverlay>
+                {activeItem ? (
+                    'tasks' in activeItem ? (
+                        <ColumnComponent
+                            column={activeItem as Column}
+                            onAddTask={() => {}}
+                            onEditTask={() => {}}
+                            onUpdateTask={() => {}}
+                            onDeleteColumn={() => {}}
+                        />
+                    ) : (
+                        <TaskCard
+                            task={activeItem as Task}
+                            onUpdateTask={() => {}}
+                            onEdit={() => {}}
+                        />
+                    )
+                ) : null}
+            </DragOverlay>
+        </DndContext>
+
+        <TaskModal 
+            isOpen={modalState.isOpen}
+            onClose={handleCloseModal}
+            onSave={handleSaveTask}
+            onDelete={handleDeleteTask}
+            taskToEdit={modalState.task}
+        />
+    </div>
+  );
+}
+
+export default App;
