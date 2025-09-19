@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
     DndContext,
@@ -21,7 +22,7 @@ import TaskModal from './components/AddTaskModal';
 import { styles } from './style';
 import Icon from './components/Icon';
 
-const initialData: BoardState = {
+const getInitialData = (): BoardState => ({
   columns: {
     'col-1': {
       id: 'col-1',
@@ -47,7 +48,7 @@ const initialData: BoardState = {
     },
   },
   columnOrder: ['col-1', 'col-2', 'col-3'],
-};
+});
 
 // Custom hook to handle proximity glow effect
 const useProximityGlow = (ref: React.RefObject<HTMLButtonElement>, glowColor: string) => {
@@ -90,10 +91,10 @@ const App: React.FC = () => {
     const [board, setBoard] = useState<BoardState>(() => {
     try {
       const savedBoard = localStorage.getItem('kanbanBoardState');
-      return savedBoard ? JSON.parse(savedBoard) : initialData;
+      return savedBoard ? JSON.parse(savedBoard) : getInitialData();
     } catch (error) {
       console.error("Could not load board state from local storage", error);
-      return initialData;
+      return getInitialData();
     }
   });
 
@@ -274,25 +275,25 @@ const App: React.FC = () => {
     }
   }, [modalState, handleUpdateTask]);
 
-  const handleDeleteTask = (taskId: string) => {
+  const handleDeleteTask = useCallback((taskId: string) => {
     if (!window.confirm("Are you sure you want to delete this task? This cannot be undone.")) {
         return;
     }
-    setBoard(currentBoard => {
-      const newColumns = { ...currentBoard.columns };
-      const columnId = Object.keys(newColumns).find(colId =>
-        newColumns[colId].tasks.some(task => task.id === taskId)
-      );
-      if (columnId) {
-        newColumns[columnId] = {
-          ...newColumns[columnId],
-          tasks: newColumns[columnId].tasks.filter(task => task.id !== taskId),
-        };
+    setBoard(prevBoard => {
+      const newColumns = { ...prevBoard.columns };
+      for (const columnId in newColumns) {
+        if (newColumns[columnId].tasks.some(task => task.id === taskId)) {
+            newColumns[columnId] = {
+                ...newColumns[columnId],
+                tasks: newColumns[columnId].tasks.filter(task => task.id !== taskId),
+            };
+            break;
+        }
       }
-      return { ...currentBoard, columns: newColumns };
+      return { ...prevBoard, columns: newColumns };
     });
     handleCloseModal();
-  };
+  }, [handleCloseModal]);
 
   const handleAddColumn = useCallback(() => {
       const newColumnId = `col-${Date.now()}`;
@@ -317,26 +318,25 @@ const App: React.FC = () => {
     }));
   }, []);
 
-  const handleDeleteColumn = (columnId: string) => {
+  const handleDeleteColumn = useCallback((columnId: string) => {
     if (!window.confirm("Are you sure you want to delete this column and all its tasks? This is irreversible.")) {
         return;
     }
-    setBoard(currentBoard => {
-        const newColumnOrder = currentBoard.columnOrder.filter(id => id !== columnId);
-        const { [columnId]: _deletedColumn, ...restColumns } = currentBoard.columns;
-        return {
-            ...currentBoard,
-            columnOrder: newColumnOrder,
-            columns: restColumns,
-        };
+    setBoard(prevBoard => {
+      const newColumnOrder = prevBoard.columnOrder.filter(id => id !== columnId);
+      const { [columnId]: _deletedColumn, ...restColumns } = prevBoard.columns;
+      return {
+          columnOrder: newColumnOrder,
+          columns: restColumns,
+      };
     });
-  };
+  }, []);
 
-  const resetBoard = () => {
+  const resetBoard = useCallback(() => {
     if(window.confirm("Are you sure you want to reset the board? This cannot be undone.")) {
-      setBoard(initialData);
+      setBoard(getInitialData());
     }
-  };
+  }, []);
   
   const handleSaveToFile = useCallback(() => {
       const boardJson = JSON.stringify(board, null, 2);

@@ -1,3 +1,5 @@
+
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useDroppable } from '@dnd-kit/core';
@@ -81,6 +83,11 @@ const Column: React.FC<ColumnProps> = ({ column, onUpdateTask, onAddTask, onEdit
     }
     e.stopPropagation();
   };
+  
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDeleteColumn(column.id);
+  };
 
   return (
     <div ref={setNodeRef} style={style}>
@@ -117,7 +124,7 @@ const Column: React.FC<ColumnProps> = ({ column, onUpdateTask, onAddTask, onEdit
             </button>
             <button 
                 style={{...styles.iconButton, cursor: 'pointer'}} 
-                onClick={(e) => { e.stopPropagation(); onDeleteColumn(column.id); }}
+                onClick={handleDeleteClick}
                 onMouseDown={(e) => e.stopPropagation()}
                 onTouchStart={(e) => e.stopPropagation()}
             >
