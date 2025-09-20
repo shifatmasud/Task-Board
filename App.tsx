@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
     DndContext,
-    PointerSensor, 
+    MouseSensor,
+    TouchSensor,
     KeyboardSensor, 
     useSensor, 
     useSensors,
@@ -114,9 +115,17 @@ const App: React.FC = () => {
   }, [board]);
   
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
+      // Require the mouse to move by 10 pixels before activating
       activationConstraint: {
-        distance: 10, // User must drag for 10px before a drag is initiated
+        distance: 10,
+      },
+    }),
+    useSensor(TouchSensor, {
+      // Press delay of 250ms, with a tolerance of 5px of movement
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
       },
     }),
     useSensor(KeyboardSensor, {

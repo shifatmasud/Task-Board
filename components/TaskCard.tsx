@@ -39,11 +39,11 @@ const Checkbox: React.FC<{ checked: boolean; onChange: () => void }> = ({ checke
     </div>
 );
 
-const SubtaskItem: React.FC<{subtask: Subtask, onToggle: () => void}> = ({subtask, onToggle}) => {
+const SubtaskItem: React.FC<{subtask: Subtask, onToggle: () => void, canHover: boolean}> = ({subtask, onToggle, canHover}) => {
     const [isHovered, setIsHovered] = useState(false);
     return (
          <div 
-            style={{...styles.subtask, ...(isHovered ? styles.subtaskHover : {})}}
+            style={{...styles.subtask, ...(isHovered && canHover ? styles.subtaskHover : {})}}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             onClick={(e) => e.stopPropagation()}
@@ -211,8 +211,6 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateTask, onEdit, isDragO
                 <h3 
                     style={styles.taskTitle} 
                     onDoubleClick={handleTitleDoubleClick}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onTouchStart={(e) => e.stopPropagation()}
                 >{task.title}</h3>
             )}
             
@@ -221,7 +219,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateTask, onEdit, isDragO
             {totalSubtasks > 0 && (
                 <div style={styles.checklist}>
                 {task.subtasks.map(subtask => (
-                    <SubtaskItem key={subtask.id} subtask={subtask} onToggle={() => handleSubtaskToggle(subtask.id)} />
+                    <SubtaskItem key={subtask.id} subtask={subtask} onToggle={() => handleSubtaskToggle(subtask.id)} canHover={canHover} />
                 ))}
                 </div>
             )}

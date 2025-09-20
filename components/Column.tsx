@@ -131,8 +131,6 @@ const Column: React.FC<ColumnProps> = ({ column, onUpdateTask, onAddTask, onEdit
                 <h2 
                     style={styles.columnTitle} 
                     onDoubleClick={handleTitleDoubleClick}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onTouchStart={(e) => e.stopPropagation()}
                 >{column.title}</h2>
             )}
             <motion.span 
