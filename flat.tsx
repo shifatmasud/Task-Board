@@ -1,20 +1,30 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
-import { 
-    DndContext,
-    MouseSensor,
-    TouchSensor,
-    KeyboardSensor, 
-    useSensor, 
-    useSensors,
-    closestCorners,
-    type DragEndEvent,
-    type DragStartEvent,
-    DragOverlay,
-    useDroppable
-} from '@dnd-kit/core';
-import { arrayMove, sortableKeyboardCoordinates, SortableContext, horizontalListSortingStrategy, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import {
+  DndContext,
+  MouseSensor,
+  TouchSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  closestCorners,
+  type DragEndEvent,
+  type DragStartEvent,
+  DragOverlay,
+  useDroppable
+} from 'https://aistudiocdn.com/@dnd-kit/core';
+
+import {
+  arrayMove,
+  sortableKeyboardCoordinates,
+  SortableContext,
+  horizontalListSortingStrategy,
+  verticalListSortingStrategy,
+  useSortable
+} from 'https://aistudiocdn.com/@dnd-kit/sortable';
+
+import { CSS } from 'https://aistudiocdn.com/@dnd-kit/utilities';
+
 
 // Global CSS from index.html
 const globalStyles = `
