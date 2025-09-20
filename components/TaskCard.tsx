@@ -15,6 +15,19 @@ interface TaskCardProps {
   isDragOverlay?: boolean;
 }
 
+const useCanHover = () => {
+    const [canHover, setCanHover] = useState(false);
+    useEffect(() => {
+        if (typeof window === 'undefined' || typeof window.matchMedia === 'undefined') return;
+        const mediaQuery = window.matchMedia('(hover: hover) and (pointer: fine)');
+        const updateCanHover = () => setCanHover(mediaQuery.matches);
+        updateCanHover();
+        mediaQuery.addEventListener('change', updateCanHover);
+        return () => mediaQuery.removeEventListener('change', updateCanHover);
+    }, []);
+    return canHover;
+};
+
 const Checkbox: React.FC<{ checked: boolean; onChange: () => void }> = ({ checked, onChange }) => (
     <div 
         style={{ ...styles.checkbox, ...(checked ? styles.checkboxChecked : {}) }} 
@@ -54,6 +67,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateTask, onEdit, isDragO
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [currentTitle, setCurrentTitle] = useState(task.title);
   const cardRef = useRef<HTMLDivElement | null>(null);
+  const canHover = useCanHover();
   
   const {
     attributes,
@@ -167,20 +181,18 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateTask, onEdit, isDragO
       {...attributes}
       {...listeners}
       layoutId={isDragOverlay ? undefined : task.id}
-      whileHover={isDragOverlay ? {} : { 
-        y: -3,
+      whileHover={isDragOverlay || !canHover ? {} : { 
         backgroundColor: 'var(--bg-surface-hover)', 
         borderColor: 'var(--border-default)',
-        boxShadow: 'var(--shadow-md)' 
+        boxShadow: 'var(--shadow-md)',
+        zIndex: 2,
       }}
-      transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+      transition={{ duration: 0.3, ease: 'easeInOut' }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-        <motion.div 
+        <div 
             style={{...styles.priorityIndicator, ...getPriorityIndicatorStyle(task.priority)}}
-            animate={{ width: isHovered ? 8 : 4 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
         />
         
         <div style={styles.taskCardContent}>
@@ -226,8 +238,8 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateTask, onEdit, isDragO
                     {task.comments.length > 0 && (
                         <motion.span 
                             style={styles.metaItem}
-                            animate={{ scale: isHovered ? 1.1 : 1 }}
-                            transition={{ type: 'spring', stiffness: 300, damping: 10, delay: 0.1 }}
+                            animate={{ scale: isHovered && canHover ? 1.1 : 1 }}
+                            transition={{ duration: 0.3, ease: [0.25, 1, 0.5, 1], delay: 0.1 }}
                         >
                             <Icon name="chat-circle-dots" weight="bold" size={14} />
                             <AnimatedCounter value={task.comments.length} fontSize={13} />
@@ -236,8 +248,8 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateTask, onEdit, isDragO
                     {totalSubtasks > 0 && (
                         <motion.span 
                             style={styles.metaItem}
-                            animate={{ scale: isHovered ? 1.1 : 1 }}
-                            transition={{ type: 'spring', stiffness: 300, damping: 10, delay: 0.15 }}
+                            animate={{ scale: isHovered && canHover ? 1.1 : 1 }}
+                            transition={{ duration: 0.3, ease: [0.25, 1, 0.5, 1], delay: 0.15 }}
                         >
                             <Icon name="check-square" weight="bold" size={14} />
                             <AnimatedCounter value={completedSubtasks} fontSize={13} />
@@ -249,7 +261,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateTask, onEdit, isDragO
             </div>
         </div>
         <AnimatePresence>
-         {isHovered && (
+         {isHovered && canHover && (
             <motion.button 
                 style={{ ...styles.taskEditButton }} 
                 onClick={handleEditClick}
@@ -259,7 +271,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateTask, onEdit, isDragO
                 initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 10 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: 0.3, ease: 'easeInOut' }}
                 whileHover={{ scale: 1.1, color: 'var(--text-primary)' }}
                 whileTap={{ scale: 0.9 }}
             >

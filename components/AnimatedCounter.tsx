@@ -16,7 +16,9 @@ const Digit: React.FC<{ value: number; height: number; }> = ({ value, height }) 
         alignItems: 'center',
       }}
       animate={{ y: -value * height }}
-      transition={{ type: 'spring', stiffness: 350, damping: 30, mass: 1 }}
+      // REFINED: Changed from a snappy 'spring' to a smoother 'tween' with a custom ease-out
+      // curve for a more subtle and premium feel.
+      transition={{ type: 'tween', duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
     >
       {[...Array(10).keys()].map(i => (
         <span key={i} style={{ height: `${height}px`, lineHeight: `${height}px` }}>{i}</span>

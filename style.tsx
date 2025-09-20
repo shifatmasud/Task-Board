@@ -18,7 +18,7 @@ export const styles: { [key: string]: React.CSSProperties | { [key: string]: Rea
   app: {
     display: 'flex',
     flexDirection: 'column',
-    height: '100vh',
+    minHeight: '100vh',
     backgroundColor: 'var(--bg-base)',
   },
   header: {
@@ -32,7 +32,7 @@ export const styles: { [key: string]: React.CSSProperties | { [key: string]: Rea
   headerTitle: {
     fontSize: '1.1rem',
     fontWeight: 600,
-    color: 'var(--text-primary)',
+    color: 'var(--text-secondary)',
     display: 'flex',
     alignItems: 'center',
     gap: '2px'
@@ -66,7 +66,6 @@ export const styles: { [key: string]: React.CSSProperties | { [key: string]: Rea
     minWidth: '320px',
     backgroundColor: 'var(--bg-surface)',
     borderRadius: 'var(--border-radius-lg)',
-    maxHeight: 'calc(100vh - 120px)',
     transition: 'opacity 0.2s, box-shadow 0.2s',
     boxShadow: 'var(--shadow-sm)',
     border: '1px solid var(--border-subtle)',
@@ -78,6 +77,12 @@ export const styles: { [key: string]: React.CSSProperties | { [key: string]: Rea
     ...mixins.flexBetween,
     padding: '12px 16px 12px 16px',
     cursor: 'grab',
+    // FIX: Add top border radius to match the parent column container.
+    // This prevents the background color on hover from creating sharp corners and appearing clipped.
+    // The radius is calculated to account for the parent's 1px border.
+    borderTopLeftRadius: 'calc(var(--border-radius-lg) - 1px)',
+    borderTopRightRadius: 'calc(var(--border-radius-lg) - 1px)',
+    transition: 'background-color 0.2s ease-in-out',
   },
   columnHeaderActions: {
     display: 'flex',
@@ -103,7 +108,6 @@ export const styles: { [key: string]: React.CSSProperties | { [key: string]: Rea
     display: 'flex',
     flexDirection: 'column',
     gap: '8px',
-    overflowY: 'auto',
     flexGrow: 1,
     padding: '0 8px 8px 8px',
     minHeight: '100px',
@@ -115,7 +119,9 @@ export const styles: { [key: string]: React.CSSProperties | { [key: string]: Rea
     transition: 'background-color 0.2s, border-color 0.2s, opacity 0.2s',
     display: 'flex',
     position: 'relative',
-    overflow: 'hidden',
+    // FIX: Set overflow to visible to prevent clipping of hover/drag effects like box-shadow.
+    // NOTE: This will cause the cursor tracker gradient to expand beyond the card's boundaries.
+    overflow: 'visible',
     gap: '8px',
     alignItems: 'flex-start',
     cursor: 'grab',

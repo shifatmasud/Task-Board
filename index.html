@@ -50,7 +50,7 @@
         font-family: 'Inter', sans-serif;
         background-color: var(--bg-base);
         color: var(--text-primary);
-        overflow: hidden;
+        overflow: auto;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         user-select: none;
@@ -81,28 +81,6 @@
         box-shadow: 0 0 0 2px rgba(176, 176, 176, 0.1), 0 0 5px rgba(176, 176, 176, 0.3);
       }
       
-      .proximity-glow-button {
-        position: relative;
-        overflow: hidden;
-      }
-
-      .proximity-glow-button::before {
-        content: '';
-        position: absolute;
-        left: var(--glow-x);
-        top: var(--glow-y);
-        width: 0;
-        height: 0;
-        transform: translate(-50%, -50%);
-        background-image: radial-gradient(circle, var(--glow-color) 0%, transparent 70%);
-        opacity: var(--glow-opacity, 0);
-        transition: opacity 0.3s ease-out;
-        pointer-events: none;
-        border-radius: 50%;
-        padding-bottom: 200%;
-        padding-right: 200%;
-      }
-
       /* Task Card Cursor Tracker Effect */
       .task-card-interactive-hover::before {
         content: '';

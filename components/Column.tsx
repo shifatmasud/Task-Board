@@ -1,6 +1,6 @@
 
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
@@ -22,11 +22,25 @@ interface ColumnProps {
   isMobile?: boolean;
 }
 
+const useCanHover = () => {
+    const [canHover, setCanHover] = useState(false);
+    useEffect(() => {
+        if (typeof window === 'undefined' || typeof window.matchMedia === 'undefined') return;
+        const mediaQuery = window.matchMedia('(hover: hover) and (pointer: fine)');
+        const updateCanHover = () => setCanHover(mediaQuery.matches);
+        updateCanHover();
+        mediaQuery.addEventListener('change', updateCanHover);
+        return () => mediaQuery.removeEventListener('change', updateCanHover);
+    }, []);
+    return canHover;
+};
+
 const Column: React.FC<ColumnProps> = ({ column, onUpdateTask, onAddTask, onEditTask, onDeleteColumn, onRenameColumn, isDragOverlay = false, isMobile = false }) => {
   const { setNodeRef: setDroppableNodeRef, isOver } = useDroppable({ id: column.id });
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [currentTitle, setCurrentTitle] = useState(column.title);
   const [isHeaderHovered, setIsHeaderHovered] = useState(false);
+  const canHover = useCanHover();
 
   const {
     setNodeRef,
@@ -96,7 +110,7 @@ const Column: React.FC<ColumnProps> = ({ column, onUpdateTask, onAddTask, onEdit
   return (
     <div ref={setNodeRef} style={style}>
       <div 
-        style={{...styles.columnHeader, ...(isHeaderHovered && !isDragging && {backgroundColor: 'var(--bg-surface-hover)'})}} 
+        style={{...styles.columnHeader, ...(isHeaderHovered && canHover && !isDragging && {backgroundColor: 'var(--bg-surface-hover)'})}} 
         {...attributes} 
         {...listeners}
         onMouseEnter={() => setIsHeaderHovered(true)}
@@ -123,8 +137,8 @@ const Column: React.FC<ColumnProps> = ({ column, onUpdateTask, onAddTask, onEdit
             )}
             <motion.span 
               style={styles.taskCount}
-              animate={{ scale: isHeaderHovered ? 1.1 : 1 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 10 }}
+              animate={{ scale: isHeaderHovered && canHover ? 1.1 : 1 }}
+              transition={{ duration: 0.3, ease: [0.25, 1, 0.5, 1] }}
             >
                 <AnimatedCounter value={column.tasks.length} fontSize={12} />
             </motion.span>
@@ -135,8 +149,9 @@ const Column: React.FC<ColumnProps> = ({ column, onUpdateTask, onAddTask, onEdit
                 onClick={onAddTask}
                 onMouseDown={(e) => e.stopPropagation()}
                 onTouchStart={(e) => e.stopPropagation()}
-                whileHover={{ scale: 1.1, color: 'var(--text-primary)' }}
+                whileHover={!canHover ? {} : { scale: 1.1, color: 'var(--text-primary)' }}
                 whileTap={{ scale: 0.9 }}
+                transition={{ duration: 0.3, ease: 'easeInOut' }}
             >
                 <Icon name="plus" size={20} />
             </motion.button>
@@ -145,8 +160,9 @@ const Column: React.FC<ColumnProps> = ({ column, onUpdateTask, onAddTask, onEdit
                 onClick={handleDeleteClick}
                 onMouseDown={(e) => e.stopPropagation()}
                 onTouchStart={(e) => e.stopPropagation()}
-                whileHover={{ scale: 1.1, color: 'var(--danger)' }}
+                whileHover={!canHover ? {} : { scale: 1.1, color: 'var(--danger)' }}
                 whileTap={{ scale: 0.9 }}
+                transition={{ duration: 0.3, ease: 'easeInOut' }}
             >
                 <Icon name="trash" size={20} />
             </motion.button>

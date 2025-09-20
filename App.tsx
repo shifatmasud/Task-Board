@@ -50,43 +50,6 @@ const getInitialData = (): BoardState => ({
   columnOrder: ['col-1', 'col-2', 'col-3'],
 });
 
-// Custom hook to handle proximity glow effect
-const useProximityGlow = (ref: React.RefObject<HTMLButtonElement>, glowColor: string) => {
-  useEffect(() => {
-    const element = ref.current;
-    if (!element) return;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      const rect = element.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      
-      const centerX = rect.width / 2;
-      const centerY = rect.height / 2;
-      const distance = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
-      const maxDistance = Math.sqrt(Math.pow(centerX, 2) + Math.pow(centerY, 2)) + 50; 
-      const opacity = Math.max(0, 1 - distance / maxDistance);
-
-      element.style.setProperty('--glow-x', `${x}px`);
-      element.style.setProperty('--glow-y', `${y}px`);
-      element.style.setProperty('--glow-color', glowColor);
-      element.style.setProperty('--glow-opacity', `${opacity * 0.6}`);
-    };
-
-    const handleMouseLeave = () => {
-      element.style.setProperty('--glow-opacity', '0');
-    };
-
-    element.addEventListener('mousemove', handleMouseMove);
-    element.addEventListener('mouseleave', handleMouseLeave);
-
-    return () => {
-      element.removeEventListener('mousemove', handleMouseMove);
-      element.removeEventListener('mouseleave', handleMouseLeave);
-    };
-  }, [ref, glowColor]);
-};
-
 const useMediaQuery = (query: string) => {
     const [matches, setMatches] = useState(window.matchMedia(query).matches);
 
@@ -99,6 +62,19 @@ const useMediaQuery = (query: string) => {
     }, [query]);
 
     return matches;
+};
+
+const useCanHover = () => {
+    const [canHover, setCanHover] = useState(false);
+    useEffect(() => {
+        if (typeof window === 'undefined' || typeof window.matchMedia === 'undefined') return;
+        const mediaQuery = window.matchMedia('(hover: hover) and (pointer: fine)');
+        const updateCanHover = () => setCanHover(mediaQuery.matches);
+        updateCanHover();
+        mediaQuery.addEventListener('change', updateCanHover);
+        return () => mediaQuery.removeEventListener('change', updateCanHover);
+    }, []);
+    return canHover;
 };
 
 
@@ -122,15 +98,8 @@ const App: React.FC = () => {
   
   const [activeItem, setActiveItem] = useState<Task | Column | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const saveButtonRef = useRef<HTMLButtonElement>(null);
-  const loadButtonRef = useRef<HTMLButtonElement>(null);
-  const resetButtonRef = useRef<HTMLButtonElement>(null);
   const isMobile = useMediaQuery('(max-width: 768px)');
-
-  useProximityGlow(saveButtonRef, 'var(--accent-blue)');
-  useProximityGlow(loadButtonRef, 'var(--priority-medium)');
-  useProximityGlow(resetButtonRef, 'var(--danger)');
-
+  const canHover = useCanHover();
 
   useEffect(() => {
     try {
@@ -386,115 +355,60 @@ const App: React.FC = () => {
 
   const headerButtonStyle = {
     ...styles.iconButton,
-    border: `1px solid var(--border-default)`,
-    backgroundColor: 'var(--bg-surface-raised)'
-  };
-
-  const saveButtonStyle: React.CSSProperties = {
-    ...headerButtonStyle,
-    color: 'var(--accent-blue)',
-    borderColor: 'var(--accent-blue)',
-    animation: 'subtle-glow-blue 2.5s ease-in-out infinite',
-  };
-
-  const loadButtonStyle: React.CSSProperties = {
-    ...headerButtonStyle,
-    color: 'var(--priority-medium)',
-    borderColor: 'var(--priority-medium)',
-    animation: 'subtle-glow-yellow 2.5s ease-in-out infinite',
-  };
-
-  const resetButtonStyle: React.CSSProperties = {
-    ...headerButtonStyle,
-    color: 'var(--danger)',
-    borderColor: 'var(--danger)',
-    animation: 'subtle-glow-red 2.5s ease-in-out infinite',
-  };
-
-  // FIX: Explicitly type with `Variants` to resolve TypeScript error with framer-motion.
-  const titleContainerVariants: Variants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.08,
-      },
-    },
-  };
-  
-  // FIX: Explicitly type with `Variants` to resolve TypeScript error.
-  // This ensures properties like `transition: { type: 'spring' }` are correctly typed.
-  const letterVariants: Variants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 0.8 },
-    hover: {
-      y: -3,
-      color: 'var(--accent-primary-hover)',
-      opacity: 1,
-      transition: { type: 'spring', stiffness: 300, damping: 15 },
-    },
+    border: `1px solid`,
+    backgroundColor: 'var(--bg-surface-raised)',
+    color: 'var(--text-tertiary)',
+    borderColor: 'var(--border-default)', // Use grayscale border for default state
   };
 
   return (
     <div style={styles.app}>
         <header style={{...styles.header, ...(isMobile && { padding: '8px 16px' })}}>
-            <motion.div 
-                style={{...styles.headerTitle, cursor: 'pointer'}}
-                variants={titleContainerVariants}
-                initial="hidden"
-                animate="visible"
-                whileHover="hover"
-            >
-                <motion.div variants={letterVariants} style={{ marginRight: '8px' }}>
-                    <Icon name="squares-four" weight="fill" size={22} style={{ color: 'var(--accent-primary)' }} />
-                </motion.div>
-                 {'Mini'.split('').map((char, index) => (
-                    <motion.span key={`mini-${index}`} variants={letterVariants} style={{display: 'inline-block', position: 'relative'}}>
-                        {char}
-                    </motion.span>
-                ))}
-                <motion.span variants={letterVariants} style={{display: 'inline-block', width: '0.5em'}} />
-                {'Loop'.split('').map((char, index) => (
-                    <motion.span key={`loop-${index}`} variants={letterVariants} style={{display: 'inline-block', position: 'relative'}}>
-                        {char}
-                    </motion.span>
-                ))}
-            </motion.div>
+            <div style={{...styles.headerTitle, gap: '8px'}}>
+                <Icon name="squares-four" weight="fill" size={22} style={{ color: 'var(--text-secondary)' }} />
+                <span>Mini Loop</span>
+            </div>
             <div style={styles.headerActions}>
                 <motion.button 
-                    ref={saveButtonRef} 
                     title="Save Board" 
                     onClick={handleSaveToFile} 
-                    style={saveButtonStyle} 
-                    className="proximity-glow-button"
-                    whileHover={{ scale: 1.05, y: -2 }}
+                    style={headerButtonStyle} 
+                    whileHover={!canHover ? {} : {
+                        color: 'var(--accent-blue)',
+                        borderColor: 'var(--accent-blue)',
+                        boxShadow: '0 0 8px var(--accent-blue), 0 0 16px var(--accent-blue)',
+                    }}
                     whileTap={{ scale: 0.95 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                    transition={{ duration: 0.5, ease: [0.42, 0, 0.58, 1] }}
                 >
                     <Icon name="floppy-disk" size={18} />
                 </motion.button>
                  <input type="file" accept=".json" ref={fileInputRef} onChange={handleLoadFromFile} style={{ display: 'none' }} />
                 <motion.button 
-                    ref={loadButtonRef} 
                     title="Load Board" 
                     onClick={() => fileInputRef.current?.click()} 
-                    style={loadButtonStyle} 
-                    className="proximity-glow-button"
-                    whileHover={{ scale: 1.05, y: -2 }}
+                    style={headerButtonStyle} 
+                    whileHover={!canHover ? {} : {
+                        color: 'var(--priority-medium)',
+                        borderColor: 'var(--priority-medium)',
+                        boxShadow: '0 0 8px var(--priority-medium), 0 0 16px var(--priority-medium)',
+                    }}
                     whileTap={{ scale: 0.95 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                    transition={{ duration: 0.5, ease: [0.42, 0, 0.58, 1] }}
                 >
                     <Icon name="folder-open" size={18} />
                 </motion.button>
                 <motion.button 
-                    ref={resetButtonRef} 
                     title="Reset Board" 
                     onClick={resetBoard} 
-                    style={resetButtonStyle} 
-                    className="proximity-glow-button"
-                    whileHover={{ scale: 1.05, y: -2 }}
+                    style={headerButtonStyle} 
+                    whileHover={!canHover ? {} : {
+                        color: 'var(--danger)',
+                        borderColor: 'var(--danger)',
+                        boxShadow: '0 0 8px var(--danger), 0 0 16px var(--danger)',
+                    }}
                     whileTap={{ scale: 0.95 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                    transition={{ duration: 0.5, ease: [0.42, 0, 0.58, 1] }}
                 >
                     <Icon name="arrow-clockwise" size={18} />
                 </motion.button>
@@ -541,16 +455,16 @@ const App: React.FC = () => {
                     ...(isMobile && { width: '100%', minWidth: 'unset' })
                   }} 
                   onClick={handleAddColumn}
-                  whileHover={{ 
+                  whileHover={!canHover ? {} : { 
                     backgroundColor: 'rgba(255, 255, 255, 0.05)', 
                     borderColor: 'var(--accent-primary)',
                     color: 'var(--text-primary)',
                     scale: 1.02
                   }}
                   whileTap={{ scale: 0.98 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                  transition={{ duration: 0.3, ease: 'easeInOut' }}
                 >
-                    <motion.div whileHover={{ rotate: 90 }}>
+                    <motion.div whileHover={!canHover ? {} : { rotate: 90 }}>
                         <Icon name="plus" weight="bold" size={16} />
                     </motion.div>
                     Add Another Column
