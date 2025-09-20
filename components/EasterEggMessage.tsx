@@ -54,6 +54,9 @@ const EasterEggMessage: React.FC = () => {
                 alignItems: 'center',
                 zIndex: 9999,
                 pointerEvents: 'none',
+                backgroundColor: 'rgba(10, 10, 10, 0.5)',
+                backdropFilter: 'blur(4px)',
+                WebkitBackdropFilter: 'blur(4px)', // For Safari
             }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

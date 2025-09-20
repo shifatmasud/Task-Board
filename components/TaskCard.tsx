@@ -92,7 +92,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateTask, onEdit, isDragO
   
   useEffect(() => {
     const element = cardRef.current;
-    if (!element || isDragOverlay) return;
+    if (!element || isDragOverlay || !canHover) return;
 
     const handleMouseMove = (e: MouseEvent) => {
       const rect = element.getBoundingClientRect();
@@ -107,7 +107,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateTask, onEdit, isDragO
     return () => {
       element.removeEventListener('mousemove', handleMouseMove);
     };
-  }, [isDragOverlay]);
+  }, [isDragOverlay, canHover]);
 
 
   const dndTransform = CSS.Transform.toString(transform);
@@ -176,7 +176,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateTask, onEdit, isDragO
   return (
     <motion.div
       ref={handleNodeRef}
-      className={!isDragOverlay ? 'task-card-interactive-hover' : ''}
+      className={!isDragOverlay && canHover ? 'task-card-interactive-hover' : ''}
       style={style}
       {...attributes}
       {...listeners}
@@ -261,7 +261,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateTask, onEdit, isDragO
             </div>
         </div>
         <AnimatePresence>
-         {isHovered && canHover && (
+         {(isHovered || !canHover) && (
             <motion.button 
                 style={{ ...styles.taskEditButton }} 
                 onClick={handleEditClick}
