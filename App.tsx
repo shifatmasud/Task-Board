@@ -12,7 +12,7 @@ import {
 } from '@dnd-kit/core';
 import { arrayMove, sortableKeyboardCoordinates, SortableContext, horizontalListSortingStrategy, verticalListSortingStrategy } from '@dnd-kit/sortable';
 // FIX: Import `Variants` type from framer-motion to explicitly type animation variants.
-import { motion, type Variants } from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 
 import type { BoardState, Column, Task } from './types';
 import { Priority } from './types';
@@ -21,6 +21,7 @@ import TaskCard from './components/TaskCard';
 import TaskModal from './components/AddTaskModal';
 import { styles } from './style';
 import Icon from './components/Icon';
+import EasterEggMessage from './components/EasterEggMessage';
 
 const getInitialData = (): BoardState => ({
   columns: {
@@ -100,6 +101,9 @@ const App: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useMediaQuery('(max-width: 768px)');
   const canHover = useCanHover();
+  
+  const [showEasterEgg, setShowEasterEgg] = useState(false);
+  const headerClicks = useRef<number[]>([]);
 
   useEffect(() => {
     try {
@@ -119,6 +123,22 @@ const App: React.FC = () => {
         coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+  
+  const handleHeaderClick = useCallback(() => {
+    const now = Date.now();
+    // Keep only clicks from the last 700ms
+    const recentClicks = headerClicks.current.filter(t => now - t < 700);
+    recentClicks.push(now);
+    headerClicks.current = recentClicks;
+
+    if (recentClicks.length >= 3) {
+        setShowEasterEgg(true);
+        headerClicks.current = []; // Reset
+        setTimeout(() => {
+            setShowEasterEgg(false);
+        }, 3000); // Let the animation play out
+    }
+  }, []);
   
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
@@ -363,7 +383,7 @@ const App: React.FC = () => {
 
   return (
     <div style={styles.app}>
-        <header style={{...styles.header, ...(isMobile && { padding: '8px 16px' })}}>
+        <header style={{...styles.header, ...(isMobile && { padding: '8px 16px' })}} onClick={handleHeaderClick}>
             <div style={{...styles.headerTitle, gap: '8px'}}>
                 <Icon name="squares-four" weight="fill" size={22} style={{ color: 'var(--text-secondary)' }} />
                 <span>Mini Loop</span>
@@ -502,6 +522,9 @@ const App: React.FC = () => {
             onDelete={handleDeleteTask}
             taskToEdit={modalState.task}
         />
+        <AnimatePresence>
+            {showEasterEgg && <EasterEggMessage />}
+        </AnimatePresence>
     </div>
   );
 }
