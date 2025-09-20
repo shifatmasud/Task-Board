@@ -1,30 +1,8 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, createContext, useContext } from 'react';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
-import {
-  DndContext,
-  MouseSensor,
-  TouchSensor,
-  KeyboardSensor,
-  useSensor,
-  useSensors,
-  closestCorners,
-  type DragEndEvent,
-  type DragStartEvent,
-  DragOverlay,
-  useDroppable
-} from 'https://aistudiocdn.com/@dnd-kit/core';
 
-import {
-  arrayMove,
-  sortableKeyboardCoordinates,
-  SortableContext,
-  horizontalListSortingStrategy,
-  verticalListSortingStrategy,
-  useSortable
-} from 'https://aistudiocdn.com/@dnd-kit/sortable';
-
-import { CSS } from 'https://aistudiocdn.com/@dnd-kit/utilities';
-
+// CONTEXT for dynamically loaded modules
+const ModuleContext = createContext<any>(null);
 
 // Global CSS from index.html
 const globalStyles = `
@@ -1104,6 +1082,10 @@ const SubtaskItem: React.FC<{subtask: Subtask, onToggle: () => void, canHover: b
 };
 
 const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateTask, onEdit, isDragOverlay = false }) => {
+  const { dndSortable, dndUtils } = useContext(ModuleContext);
+  const { useSortable } = dndSortable;
+  const { CSS } = dndUtils;
+    
   const [isHovered, setIsHovered] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [currentTitle, setCurrentTitle] = useState(task.title);
@@ -1333,6 +1315,11 @@ interface ColumnProps {
 }
 
 const ColumnComponent: React.FC<ColumnProps> = ({ column, onUpdateTask, onAddTask, onEditTask, onDeleteColumn, onRenameColumn, isDragOverlay = false, isMobile = false }) => {
+  const { dndCore, dndSortable, dndUtils } = useContext(ModuleContext);
+  const { useDroppable } = dndCore;
+  const { SortableContext, useSortable, verticalListSortingStrategy } = dndSortable;
+  const { CSS } = dndUtils;
+
   const { setNodeRef: setDroppableNodeRef, isOver } = useDroppable({ id: column.id });
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [currentTitle, setCurrentTitle] = useState(column.title);
@@ -1490,7 +1477,26 @@ const ColumnComponent: React.FC<ColumnProps> = ({ column, onUpdateTask, onAddTas
 
 
 // Main App Component
-export default function New(props: {}) {
+function KanbanApp() {
+    const { dndCore, dndSortable } = useContext(ModuleContext);
+    const { 
+        DndContext,
+        MouseSensor,
+        TouchSensor,
+        KeyboardSensor, 
+        useSensor, 
+        useSensors,
+        closestCorners,
+        DragOverlay,
+    } = dndCore;
+    const {
+        arrayMove,
+        sortableKeyboardCoordinates,
+        SortableContext,
+        horizontalListSortingStrategy,
+        verticalListSortingStrategy,
+    } = dndSortable;
+
     const [board, setBoard] = useState<BoardState>(() => {
     try {
       const savedBoard = localStorage.getItem('kanbanBoardState');
@@ -1556,7 +1562,7 @@ export default function New(props: {}) {
     }
   }, []);
   
-  const handleDragStart = (event: DragStartEvent) => {
+  const handleDragStart = (event: any) => {
     const { active } = event;
     const type = active.data.current?.type;
 
@@ -1570,7 +1576,7 @@ export default function New(props: {}) {
   };
 
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = (event: any) => {
     setActiveItem(null);
     const { active, over } = event;
 
@@ -1796,152 +1802,180 @@ export default function New(props: {}) {
   };
 
   return (
-    <>
-        <style>{globalStyles}</style>
-        <div style={styles.app}>
-            <header style={{...styles.header, ...(isMobile && { padding: '8px 16px' })}} onClick={handleHeaderClick}>
-                <div style={{...styles.headerTitle, gap: '8px'}}>
-                    <Icon name="squares-four" weight="fill" size={22} style={{ color: 'var(--text-secondary)' }} />
-                    <span>Mini Loop</span>
-                </div>
-                <div style={styles.headerActions}>
-                    <motion.button 
-                        title="Save Board" 
-                        onClick={handleSaveToFile} 
-                        style={headerButtonStyle} 
-                        whileHover={!canHover ? {} : {
-                            color: 'var(--accent-blue)',
-                            borderColor: 'var(--accent-blue)',
-                            boxShadow: '0 0 8px var(--accent-blue), 0 0 16px var(--accent-blue)',
-                        }}
-                        whileTap={{ scale: 0.95 }}
-                        transition={{ duration: 0.5, ease: [0.42, 0, 0.58, 1] }}
-                    >
-                        <Icon name="floppy-disk" size={18} />
-                    </motion.button>
-                     <input type="file" accept=".json" ref={fileInputRef} onChange={handleLoadFromFile} style={{ display: 'none' }} />
-                    <motion.button 
-                        title="Load Board" 
-                        onClick={() => fileInputRef.current?.click()} 
-                        style={headerButtonStyle} 
-                        whileHover={!canHover ? {} : {
-                            color: 'var(--priority-medium)',
-                            borderColor: 'var(--priority-medium)',
-                            boxShadow: '0 0 8px var(--priority-medium), 0 0 16px var(--priority-medium)',
-                        }}
-                        whileTap={{ scale: 0.95 }}
-                        transition={{ duration: 0.5, ease: [0.42, 0, 0.58, 1] }}
-                    >
-                        <Icon name="folder-open" size={18} />
-                    </motion.button>
-                    <motion.button 
-                        title="Reset Board" 
-                        onClick={resetBoard} 
-                        style={headerButtonStyle} 
-                        whileHover={!canHover ? {} : {
-                            color: 'var(--danger)',
-                            borderColor: 'var(--danger)',
-                            boxShadow: '0 0 8px var(--danger), 0 0 16px var(--danger)',
-                        }}
-                        whileTap={{ scale: 0.95 }}
-                        transition={{ duration: 0.5, ease: [0.42, 0, 0.58, 1] }}
-                    >
-                        <Icon name="arrow-clockwise" size={18} />
-                    </motion.button>
-                </div>
-            </header>
+    <div style={styles.app}>
+        <header style={{...styles.header, ...(isMobile && { padding: '8px 16px' })}} onClick={handleHeaderClick}>
+            <div style={{...styles.headerTitle, gap: '8px'}}>
+                <Icon name="squares-four" weight="fill" size={22} style={{ color: 'var(--text-secondary)' }} />
+                <span>Mini Loop</span>
+            </div>
+            <div style={styles.headerActions}>
+                <motion.button 
+                    title="Save Board" 
+                    onClick={handleSaveToFile} 
+                    style={headerButtonStyle} 
+                    whileHover={!canHover ? {} : {
+                        color: 'var(--accent-blue)',
+                        borderColor: 'var(--accent-blue)',
+                        boxShadow: '0 0 8px var(--accent-blue), 0 0 16px var(--accent-blue)',
+                    }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ duration: 0.5, ease: [0.42, 0, 0.58, 1] }}
+                >
+                    <Icon name="floppy-disk" size={18} />
+                </motion.button>
+                 <input type="file" accept=".json" ref={fileInputRef} onChange={handleLoadFromFile} style={{ display: 'none' }} />
+                <motion.button 
+                    title="Load Board" 
+                    onClick={() => fileInputRef.current?.click()} 
+                    style={headerButtonStyle} 
+                    whileHover={!canHover ? {} : {
+                        color: 'var(--priority-medium)',
+                        borderColor: 'var(--priority-medium)',
+                        boxShadow: '0 0 8px var(--priority-medium), 0 0 16px var(--priority-medium)',
+                    }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ duration: 0.5, ease: [0.42, 0, 0.58, 1] }}
+                >
+                    <Icon name="folder-open" size={18} />
+                </motion.button>
+                <motion.button 
+                    title="Reset Board" 
+                    onClick={resetBoard} 
+                    style={headerButtonStyle} 
+                    whileHover={!canHover ? {} : {
+                        color: 'var(--danger)',
+                        borderColor: 'var(--danger)',
+                        boxShadow: '0 0 8px var(--danger), 0 0 16px var(--danger)',
+                    }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ duration: 0.5, ease: [0.42, 0, 0.58, 1] }}
+                >
+                    <Icon name="arrow-clockwise" size={18} />
+                </motion.button>
+            </div>
+        </header>
 
-            <DndContext 
-                sensors={sensors}
-                collisionDetection={closestCorners}
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-                onDragCancel={() => setActiveItem(null)}
-            >
-                <div style={{
-                    ...styles.boardContainer,
-                    ...(isMobile && {
-                        flexDirection: 'column',
-                        padding: '16px',
-                        gap: '16px',
-                        alignItems: 'stretch',
-                        overflowX: 'hidden',
-                        overflowY: 'auto'
-                    })
-                }}>
-                    <SortableContext items={board.columnOrder} strategy={isMobile ? verticalListSortingStrategy : horizontalListSortingStrategy}>
-                        {board.columnOrder.map(columnId => {
-                            const column = board.columns[columnId];
-                            return (
-                                <ColumnComponent
-                                    key={column.id}
-                                    column={column}
-                                    onUpdateTask={handleUpdateTask}
-                                    onEditTask={handleOpenEditModal}
-                                    onAddTask={() => handleOpenAddModal(column.id)}
-                                    onDeleteColumn={handleDeleteColumn}
-                                    onRenameColumn={(newTitle) => handleRenameColumn(column.id, newTitle)}
-                                    isMobile={isMobile}
-                                />
-                            );
-                        })}
-                    </SortableContext>
-                     <motion.button style={{
-                        ...styles.addColumnButton,
-                        ...(isMobile && { width: '100%', minWidth: 'unset' })
-                      }} 
-                      onClick={handleAddColumn}
-                      whileHover={!canHover ? {} : { 
-                        backgroundColor: 'rgba(255, 255, 255, 0.05)', 
-                        borderColor: 'var(--accent-primary)',
-                        color: 'var(--text-primary)',
-                        scale: 1.02
-                      }}
-                      whileTap={{ scale: 0.98 }}
-                      transition={{ duration: 0.3, ease: 'easeInOut' }}
-                    >
-                        <motion.div whileHover={!canHover ? {} : { rotate: 90 }}>
-                            <Icon name="plus" weight="bold" size={16} />
-                        </motion.div>
-                        Add Another Column
-                    </motion.button>
-                </div>
-                 <DragOverlay>
-                    {activeItem ? (
-                        'tasks' in activeItem ? (
+        <DndContext 
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragCancel={() => setActiveItem(null)}
+        >
+            <div style={{
+                ...styles.boardContainer,
+                ...(isMobile && {
+                    flexDirection: 'column',
+                    padding: '16px',
+                    gap: '16px',
+                    alignItems: 'stretch',
+                    overflowX: 'hidden',
+                    overflowY: 'auto'
+                })
+            }}>
+                <SortableContext items={board.columnOrder} strategy={isMobile ? verticalListSortingStrategy : horizontalListSortingStrategy}>
+                    {board.columnOrder.map(columnId => {
+                        const column = board.columns[columnId];
+                        return (
                             <ColumnComponent
-                                column={activeItem as Column}
-                                onAddTask={() => {}}
-                                onEditTask={() => {}}
-                                onUpdateTask={() => {}}
-                                onDeleteColumn={() => {}}
-                                onRenameColumn={() => {}}
-                                isDragOverlay
+                                key={column.id}
+                                column={column}
+                                onUpdateTask={handleUpdateTask}
+                                onEditTask={handleOpenEditModal}
+                                onAddTask={() => handleOpenAddModal(column.id)}
+                                onDeleteColumn={handleDeleteColumn}
+                                onRenameColumn={(newTitle) => handleRenameColumn(column.id, newTitle)}
                                 isMobile={isMobile}
                             />
-                        ) : (
-                            <TaskCard
-                                task={activeItem as Task}
-                                onUpdateTask={() => {}}
-                                onEdit={() => {}}
-                                isDragOverlay
-                            />
-                        )
-                    ) : null}
-                </DragOverlay>
-            </DndContext>
+                        );
+                    })}
+                </SortableContext>
+                 <motion.button style={{
+                    ...styles.addColumnButton,
+                    ...(isMobile && { width: '100%', minWidth: 'unset' })
+                  }} 
+                  onClick={handleAddColumn}
+                  whileHover={!canHover ? {} : { 
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)', 
+                    borderColor: 'var(--accent-primary)',
+                    color: 'var(--text-primary)',
+                    scale: 1.02
+                  }}
+                  whileTap={{ scale: 0.98 }}
+                  transition={{ duration: 0.3, ease: 'easeInOut' }}
+                >
+                    <motion.div whileHover={!canHover ? {} : { rotate: 90 }}>
+                        <Icon name="plus" weight="bold" size={16} />
+                    </motion.div>
+                    Add Another Column
+                </motion.button>
+            </div>
+             <DragOverlay>
+                {activeItem ? (
+                    'tasks' in activeItem ? (
+                        <ColumnComponent
+                            column={activeItem as Column}
+                            onAddTask={() => {}}
+                            onEditTask={() => {}}
+                            onUpdateTask={() => {}}
+                            onDeleteColumn={() => {}}
+                            onRenameColumn={() => {}}
+                            isDragOverlay
+                            isMobile={isMobile}
+                        />
+                    ) : (
+                        <TaskCard
+                            task={activeItem as Task}
+                            onUpdateTask={() => {}}
+                            onEdit={() => {}}
+                            isDragOverlay
+                        />
+                    )
+                ) : null}
+            </DragOverlay>
+        </DndContext>
 
-            <TaskModal 
-                isOpen={modalState.isOpen}
-                onClose={handleCloseModal}
-                onSave={handleSaveTask}
-                onDelete={handleDeleteTask}
-                taskToEdit={modalState.task}
-            />
-            <AnimatePresence>
-                {showEasterEgg && <EasterEggMessage />}
-            </AnimatePresence>
-        </div>
-    </>
+        <TaskModal 
+            isOpen={modalState.isOpen}
+            onClose={handleCloseModal}
+            onSave={handleSaveTask}
+            onDelete={handleDeleteTask}
+            taskToEdit={modalState.task}
+        />
+        <AnimatePresence>
+            {showEasterEgg && <EasterEggMessage />}
+        </AnimatePresence>
+    </div>
   );
+}
+
+export default function New(props: {}) {
+    const [modules, setModules] = useState<any>(null);
+
+    useEffect(() => {
+        Promise.all([
+            import('https://aistudiocdn.com/@dnd-kit/core'),
+            import('https://aistudiocdn.com/@dnd-kit/sortable'),
+            import('https://aistudiocdn.com/@dnd-kit/utilities'),
+        ]).then(([ dndCore, dndSortable, dndUtils]) => {
+            setModules({ dndCore, dndSortable, dndUtils });
+        }).catch(err => {
+            console.error("Failed to load dynamic modules", err);
+        });
+    }, []);
+    
+    return (
+      <>
+        <style>{globalStyles}</style>
+        {modules ? (
+          <ModuleContext.Provider value={modules}>
+              <KanbanApp />
+          </ModuleContext.Provider>
+        ) : (
+          <div style={{ ...styles.app, ...mixins.flexCenter }}>
+            <div style={{ color: 'var(--text-secondary)' }}>Loading Mini Loop...</div>
+          </div>
+        )}
+      </>
+    );
 }
