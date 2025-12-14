@@ -1,6 +1,5 @@
-
-import type React from 'react';
-import { styles } from '../style';
+import React from 'react';
+import * as PhosphorIcons from '@phosphor-icons/react';
 
 interface IconProps {
   name: string;
@@ -11,19 +10,17 @@ interface IconProps {
 }
 
 const Icon: React.FC<IconProps> = ({ name, weight = 'regular', size = 18, style, onClick }) => {
-  // Correctly constructs class names for Phosphor Icons Web.
-  // For regular weight: "ph ph-heart"
-  // For other weights: "ph-bold ph-heart"
-  const weightClass = weight === 'regular' ? 'ph' : `ph-${weight}`;
-  const nameClass = `ph-${name}`;
-  const className = `${weightClass} ${nameClass}`;
-  
-  const combinedStyle = {
-    ...style,
-    fontSize: `${size}px`,
-  };
-
-  return <i className={className} style={combinedStyle} onClick={onClick}></i>;
+    // Converts kebab-case to PascalCase e.g. "floppy-disk" -> "FloppyDisk"
+    const iconName = name.split('-').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join('');
+    const IconComponent = (PhosphorIcons as any)[iconName];
+    
+    if (!IconComponent) {
+        console.warn(`Icon "${name}" not found in @phosphor-icons/react. Rendering fallback.`);
+        // Render a fallback question mark icon.
+        return <PhosphorIcons.Question size={size} weight={weight} style={style} onClick={onClick} />;
+    }
+    
+    return <IconComponent size={size} weight={weight} style={style} onClick={onClick} />;
 };
 
 export default Icon;

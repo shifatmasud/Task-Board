@@ -206,8 +206,10 @@ const App: React.FC = () => {
     if (!activeColumnId || !overColumnId) return;
     
     setBoard(board => {
-        const activeColumn = board.columns[activeColumnId];
-        const overColumn = board.columns[overColumnId];
+        // FIX: Cast column to Type `Column` to prevent TypeScript from inferring it as `unknown`
+        // in certain configurations, which causes a compile-time error when accessing `.tasks`.
+        const activeColumn = board.columns[activeColumnId] as Column;
+        const overColumn = board.columns[overColumnId] as Column;
         
         if (activeColumnId === overColumnId) {
             const oldIndex = activeColumn.tasks.findIndex(t => t.id === activeId);

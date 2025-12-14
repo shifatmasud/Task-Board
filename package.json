@@ -14,7 +14,8 @@
     "framer-motion": "^12.23.16",
     "@dnd-kit/core": "^6.1.0",
     "@dnd-kit/sortable": "^8.0.0",
-    "@dnd-kit/utilities": "^3.2.2"
+    "@dnd-kit/utilities": "^3.2.2",
+    "@phosphor-icons/react": "^2.1.1"
   },
   "devDependencies": {
     "@jest/globals": "^30.1.2",

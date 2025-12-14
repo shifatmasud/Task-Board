@@ -7,6 +7,7 @@ import React, {
     useContext,
 } from "react"
 import { motion, AnimatePresence, type Variants } from "framer-motion"
+import * as PhosphorIcons from "@phosphor-icons/react"
 
 // CONTEXT for dynamically loaded modules
 const ModuleContext = createContext<any>(null)
@@ -14,7 +15,6 @@ const ModuleContext = createContext<any>(null)
 // Global CSS from index.html
 const globalStyles = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-  @import url('https://unpkg.com/@phosphor-icons/web@2.1.1/src/css/phosphor.css');
 
   :root {
     --bg-base: #0A0A0A;
@@ -711,17 +711,18 @@ const Icon: React.FC<IconProps> = ({
     style,
     onClick,
 }) => {
-    const weightClass = weight === "regular" ? "ph" : `ph-${weight}`
-    const nameClass = `ph-${name}`
-    const className = `${weightClass} ${nameClass}`
-
-    const combinedStyle = {
-        ...style,
-        fontSize: `${size}px`,
+    // Converts kebab-case to PascalCase e.g. "floppy-disk" -> "FloppyDisk"
+    const iconName = name.split('-').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join('');
+    const IconComponent = (PhosphorIcons as any)[iconName];
+    
+    if (!IconComponent) {
+        console.warn(`Icon "${name}" not found in @phosphor-icons/react. Rendering fallback.`);
+        // Render a fallback question mark icon.
+        return <PhosphorIcons.Question size={size} weight={weight} style={style} onClick={onClick} />;
     }
-
-    return <i className={className} style={combinedStyle} onClick={onClick}></i>
-}
+    
+    return <IconComponent size={size} weight={weight} style={style} onClick={onClick} />;
+};
 
 interface AnimatedCounterProps {
     value: number
