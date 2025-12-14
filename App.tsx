@@ -193,8 +193,11 @@ const App: React.FC = () => {
     }
     
     // Dragging a Task
-    const activeColumnId = Object.keys(board.columns).find(colId => board.columns[colId].tasks.some(t => t.id === activeId));
-    let overColumnId = Object.keys(board.columns).find(colId => board.columns[colId].tasks.some(t => t.id === overId));
+    // FIX: Use optional chaining to safely access `tasks` for cases where `noUncheckedIndexedAccess`
+    // is enabled in TypeScript, which can cause `board.columns[colId]` to be `Column | undefined`.
+    const activeColumnId = Object.keys(board.columns).find(colId => board.columns[colId]?.tasks.some(t => t.id === activeId));
+    // FIX: Use optional chaining to safely access `tasks`.
+    let overColumnId = Object.keys(board.columns).find(colId => board.columns[colId]?.tasks.some(t => t.id === overId));
 
     if (!overColumnId && board.columns[overId]) {
         overColumnId = overId;
@@ -247,7 +250,9 @@ const App: React.FC = () => {
   }, []);
   
   const handleOpenEditModal = useCallback((task: Task) => {
-      const columnId = Object.values(board.columns).find(col => col.tasks.some(t => t.id === task.id))?.id;
+      // FIX: Cast the result of `Object.values` to `Column[]` to ensure correct type inference for `find`,
+      // preventing it from returning `unknown` in some TypeScript configurations.
+      const columnId = (Object.values(board.columns) as Column[]).find(col => col.tasks.some(t => t.id === task.id))?.id;
       if (columnId) {
         setModalState({ isOpen: true, mode: 'edit', task, columnId });
       }

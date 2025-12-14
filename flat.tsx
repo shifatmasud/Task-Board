@@ -14,6 +14,7 @@ const ModuleContext = createContext<any>(null)
 // Global CSS from index.html
 const globalStyles = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  @import url('https://unpkg.com/@phosphor-icons/web@2.1.1/src/css/phosphor.css');
 
   :root {
     --bg-base: #0A0A0A;
@@ -1446,10 +1447,6 @@ const TaskCard: React.FC<TaskCardProps> = ({
         zIndex: isDragging ? 10 : "auto",
     }
 
-    if (isDragging) {
-        style.opacity = 0
-    }
-
     if (isDragOverlay) {
         style.cursor = "grabbing"
         style.boxShadow = (
@@ -1511,6 +1508,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             {...attributes}
             {...listeners}
             layoutId={isDragOverlay ? undefined : task.id}
+            animate={{ opacity: isDragging ? 0.4 : 1 }}
             whileHover={
                 isDragOverlay || !canHover
                     ? {}
@@ -1910,7 +1908,8 @@ const ColumnComponent: React.FC<ColumnProps> = ({
 
 // Main App Component
 function KanbanApp() {
-    const { dndCore, dndSortable } = useContext(ModuleContext)
+    const modules = useContext(ModuleContext)
+    const { dndCore, dndSortable } = modules
     const {
         DndContext,
         MouseSensor,
@@ -1950,6 +1949,8 @@ function KanbanApp() {
     }>({ isOpen: false, mode: "add" })
 
     const [activeItem, setActiveItem] = useState<Task | Column | null>(null)
+    const [initialBoardOnDrag, setInitialBoardOnDrag] = useState<BoardState | null>(null);
+
     const fileInputRef = useRef<HTMLInputElement>(null)
     const isMobile = useMediaQuery("(max-width: 768px)")
     const canHover = useCanHover()
@@ -1998,13 +1999,16 @@ function KanbanApp() {
     }, [])
 
     const handleDragStart = (event: any) => {
+        setInitialBoardOnDrag(board);
         const { active } = event
         const type = active.data.current?.type
 
         if (type === "Column") {
             setActiveItem(board.columns[active.id as string])
         } else if (type === "Task") {
-            const column = Object.values(board.columns).find((col) =>
+            // FIX: Cast `Object.values` result to `Column[]` to ensure correct type inference for `find`.
+            // This resolves cases where `Object.values` on a record type returns `unknown[]`.
+            const column = (Object.values(board.columns) as Column[]).find((col) =>
                 col.tasks.some((t) => t.id === active.id)
             )
             const task = column?.tasks.find((t) => t.id === active.id)
@@ -2012,100 +2016,90 @@ function KanbanApp() {
         }
     }
 
-    const handleDragEnd = (event: any) => {
-        setActiveItem(null)
-        const { active, over } = event
-
-        if (!over) return
-
-        const activeId = active.id.toString()
-        const overId = over.id.toString()
-
-        if (activeId === overId) return
-
-        const activeType = active.data.current?.type
-
-        if (activeType === "Column") {
-            setBoard((board) => {
-                const oldIndex = board.columnOrder.indexOf(activeId)
-                const newIndex = board.columnOrder.indexOf(overId)
-                if (oldIndex !== -1 && newIndex !== -1) {
-                    return {
-                        ...board,
-                        columnOrder: arrayMove(
-                            board.columnOrder,
-                            oldIndex,
-                            newIndex
-                        ),
-                    }
-                }
-                return board
-            })
-            return
-        }
-
-        const activeColumnId = Object.keys(board.columns).find((colId) =>
-            board.columns[colId].tasks.some((t) => t.id === activeId)
-        )
-        let overColumnId = Object.keys(board.columns).find((colId) =>
-            board.columns[colId].tasks.some((t) => t.id === overId)
-        )
-
-        if (!overColumnId && board.columns[overId]) {
-            overColumnId = overId
-        }
-
-        if (!activeColumnId || !overColumnId) return
-
-        setBoard((board) => {
-            const activeColumn = board.columns[activeColumnId]
-            const overColumn = board.columns[overColumnId]
-
+    const handleDragOver = useCallback((event: any) => {
+        const { active, over } = event;
+        if (!over) return;
+    
+        const activeId = active.id.toString();
+        const overId = over.id.toString();
+        
+        if (activeId === overId) return;
+    
+        const activeType = active.data.current?.type;
+        if (activeType !== 'Task') return;
+        
+        setBoard(currentBoard => {
+            const activeColumnId = Object.keys(currentBoard.columns).find(colId => (currentBoard.columns[colId] as Column).tasks.some(t => t.id === activeId));
+            if (!activeColumnId) return currentBoard;
+    
+            const overIsColumn = overId in currentBoard.columns;
+            const overColumnId = overIsColumn 
+                ? overId 
+                : Object.keys(currentBoard.columns).find(colId => (currentBoard.columns[colId] as Column).tasks.some(t => t.id === overId));
+            if (!overColumnId) return currentBoard;
+    
             if (activeColumnId === overColumnId) {
-                const oldIndex = activeColumn.tasks.findIndex(
-                    (t) => t.id === activeId
-                )
-                const newIndex = overColumn.tasks.findIndex(
-                    (t) => t.id === overId
-                )
-
+                // Same column reordering
+                const column = currentBoard.columns[activeColumnId];
+                const oldIndex = column.tasks.findIndex(t => t.id === activeId);
+                const newIndex = column.tasks.findIndex(t => t.id === overId);
+    
                 if (oldIndex !== -1 && newIndex !== -1) {
-                    const newTasks = arrayMove(
-                        activeColumn.tasks,
-                        oldIndex,
-                        newIndex
-                    )
-                    const newColumns = {
-                        ...board.columns,
-                        [activeColumnId]: { ...activeColumn, tasks: newTasks },
-                    }
-                    return { ...board, columns: newColumns }
+                    const newTasks = arrayMove(column.tasks, oldIndex, newIndex);
+                    return {
+                        ...currentBoard,
+                        columns: {
+                            ...currentBoard.columns,
+                            [activeColumnId]: { ...column, tasks: newTasks }
+                        }
+                    };
                 }
             } else {
-                const sourceTasks = [...activeColumn.tasks]
-                const destTasks = [...overColumn.tasks]
-
-                const sourceIndex = sourceTasks.findIndex(
-                    (t) => t.id === activeId
-                )
-                const [movedTask] = sourceTasks.splice(sourceIndex, 1)
-
-                let destIndex = destTasks.findIndex((t) => t.id === overId)
-                if (destIndex === -1) {
-                    destIndex = destTasks.length
+                // Moving between columns
+                const sourceColumn = currentBoard.columns[activeColumnId];
+                const destColumn = currentBoard.columns[overColumnId];
+                
+                const sourceTasks = [...sourceColumn.tasks];
+                const destTasks = [...destColumn.tasks];
+                
+                const sourceIndex = sourceTasks.findIndex(t => t.id === activeId);
+                if (sourceIndex === -1) return currentBoard;
+    
+                const [movedTask] = sourceTasks.splice(sourceIndex, 1);
+                
+                let destIndex = destTasks.findIndex(t => t.id === overId);
+                if (overIsColumn || destIndex === -1) {
+                    destIndex = destTasks.length;
                 }
-                destTasks.splice(destIndex, 0, movedTask)
-
-                const newColumns = {
-                    ...board.columns,
-                    [activeColumnId]: { ...activeColumn, tasks: sourceTasks },
-                    [overColumnId]: { ...overColumn, tasks: destTasks },
-                }
-                return { ...board, columns: newColumns }
+                
+                destTasks.splice(destIndex, 0, movedTask);
+                
+                return {
+                    ...currentBoard,
+                    columns: {
+                        ...currentBoard.columns,
+                        [activeColumnId]: { ...sourceColumn, tasks: sourceTasks },
+                        [overColumnId]: { ...destColumn, tasks: destTasks }
+                    }
+                };
             }
-            return board
-        })
-    }
+            return currentBoard;
+        });
+    }, [arrayMove]);
+
+    const handleDragEnd = useCallback((event: any) => {
+        setActiveItem(null)
+        setInitialBoardOnDrag(null)
+    }, []);
+    
+    const handleDragCancel = useCallback(() => {
+        if (initialBoardOnDrag) {
+            setBoard(initialBoardOnDrag);
+        }
+        setActiveItem(null);
+        setInitialBoardOnDrag(null);
+    }, [initialBoardOnDrag]);
+
 
     const handleOpenAddModal = useCallback((columnId: string) => {
         setModalState({ isOpen: true, mode: "add", columnId })
@@ -2113,7 +2107,9 @@ function KanbanApp() {
 
     const handleOpenEditModal = useCallback(
         (task: Task) => {
-            const columnId = Object.values(board.columns).find((col) =>
+            // FIX: Cast `Object.values` to `Column[]` to fix type inference issues where `find` would
+            // otherwise return `unknown`, causing subsequent property access to fail.
+            const columnId = (Object.values(board.columns) as Column[]).find((col) =>
                 col.tasks.some((t) => t.id === task.id)
             )?.id
             if (columnId) {
@@ -2382,8 +2378,9 @@ function KanbanApp() {
                 sensors={sensors}
                 collisionDetection={closestCorners}
                 onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
                 onDragEnd={handleDragEnd}
-                onDragCancel={() => setActiveItem(null)}
+                onDragCancel={handleDragCancel}
             >
                 <div
                     style={{
@@ -2515,15 +2512,6 @@ export default function New(props: {}) {
                 setError(err)
             })
 
-        // Load Phosphor icons script
-        const scriptId = "phosphor-icons-script"
-        if (!document.getElementById(scriptId)) {
-            const script = document.createElement("script")
-            script.id = scriptId
-            script.src = "https://unpkg.com/@phosphor-icons/web"
-            script.defer = true
-            document.head.appendChild(script)
-        }
     }, [])
 
     const Placeholder = ({ message }: { message: string }) => (
