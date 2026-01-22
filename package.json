@@ -2,11 +2,12 @@
   "name": "mini-loop",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "Mini Loop is a feature-rich Kanban board with a sleek 'noir' theme. It supports drag-and-drop, task checklists, priority levels, and local save/load functionality, all wrapped in a fluid, responsive interface.",
   "scripts": {
-    "dev": "echo \"Development server not needed for this environment, open index.html directly.\"",
-    "build": "echo \"Build step not needed for this environment.\"",
-    "test": "echo \"Test environment not configured.\""
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
     "react": "^19.1.1",
@@ -18,14 +19,10 @@
     "@phosphor-icons/react": "^2.1.1"
   },
   "devDependencies": {
-    "@jest/globals": "^30.1.2",
-    "@testing-library/jest-dom": "^6.8.0",
-    "@testing-library/react": "^16.3.0",
-    "@testing-library/user-event": "^14.6.1",
+    "vite": "^6.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.5.3",
     "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
-    "typescript": "^5.5.3"
-  },
-  "author": "Shifat Masud",
-  "license": "ISC"
+    "@types/react-dom": "^18.3.0"
+  }
 }
